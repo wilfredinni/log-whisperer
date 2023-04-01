@@ -40,6 +40,42 @@ export function activate(context: vscode.ExtensionContext) {
             vscode.window.showInformationMessage(
               `A new path was added to logFolders settings: ../${folderName}`
             );
+
+            // open all the log files in the selected folder
+            vscode.workspace
+              .findFiles(`**/${folderName}/**/*.log`)
+              .then((uris) => {
+                if (uris) {
+                  uris.forEach((uri) => {
+                    vscode.workspace.openTextDocument(uri).then((doc) => {
+                      const {
+                        startWithDatePattern,
+                        logLevelPattern,
+                        datePattern,
+                      } = require("./patterns");
+
+                      const text = doc.getText();
+                      const matches = text.match(startWithDatePattern);
+                      const logIndexes: any = [];
+
+                      if (matches) {
+                        matches.forEach((matchedText) => {
+                          const logLevel = matchedText.match(logLevelPattern);
+                          const date = matchedText.match(datePattern);
+
+                          logIndexes.push({
+                            date: date ? date[0] : "no date found",
+                            level: logLevel ? logLevel[0] : "INFO",
+                            file: doc.fileName,
+                            match: matchedText,
+                          });
+                        });
+                      }
+                      console.log(logIndexes);
+                    });
+                  });
+                }
+              });
           }
         }
       });
