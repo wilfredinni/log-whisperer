@@ -30,11 +30,17 @@
     "views": {
       "log-whisperer": [
         {
-          "id": "log-whisperer-view",
+          "id": "log-whisperer-main",
           "name": "Log Whisperer"
         }
       ]
-    }
+    },
+    "viewsWelcome": [
+      {
+        "view": "log-whisperer-main",
+        "contents": "In order to use Log Whisperer select a folder containing log files.\n[Open Folder](command:log-whisperer.helloWorld)"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "pnpm run compile",
