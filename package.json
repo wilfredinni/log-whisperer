@@ -17,7 +17,24 @@
         "command": "log-whisperer.helloWorld",
         "title": "Hello World"
       }
-    ]
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "log-whisperer",
+          "title": "Log Whisperer",
+          "icon": "resources/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "log-whisperer": [
+        {
+          "id": "log-whisperer-view",
+          "name": "Log Whisperer"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "pnpm run compile",
