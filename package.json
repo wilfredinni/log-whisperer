@@ -14,7 +14,7 @@
   "contributes": {
     "commands": [
       {
-        "command": "log-whisperer.helloWorld",
+        "command": "log-whisperer.selectLogFolder",
         "title": "Hello World"
       }
     ],
@@ -38,7 +38,7 @@
     "viewsWelcome": [
       {
         "view": "log-whisperer-main",
-        "contents": "In order to use Log Whisperer select a folder containing log files.\n[Open Folder](command:log-whisperer.helloWorld)"
+        "contents": "In order to use Log Whisperer select a folder containing log files.\n[Open Folder](command:log-whisperer.selectLogFolder)"
       }
     ]
   },
