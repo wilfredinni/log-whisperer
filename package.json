@@ -15,7 +15,7 @@
     "commands": [
       {
         "command": "log-whisperer.selectLogFolder",
-        "title": "Hello World"
+        "title": "Log Whisperer: Select Log Folder"
       }
     ],
     "viewsContainers": {
@@ -38,9 +38,20 @@
     "viewsWelcome": [
       {
         "view": "log-whisperer-main",
-        "contents": "In order to use Log Whisperer select a folder containing log files.\n[Open Folder](command:log-whisperer.selectLogFolder)"
+        "contents": "In order to use Log Whisperer select a folder containing log files.\n[Select the logs Folder](command:log-whisperer.selectLogFolder)",
+        "when": "config.log-whisperer.logFolders.length == 0"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Log Whisperer",
+      "properties": {
+        "log-whisperer.logFolders": {
+          "type": "array",
+          "default": [],
+          "description": "The folders containing log files"
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "pnpm run compile",

@@ -6,7 +6,7 @@ export function activate(context: vscode.ExtensionContext) {
   let selectLogFolder = vscode.commands.registerCommand(
     "log-whisperer.selectLogFolder",
     () => {
-      const folderPath = vscode.window.showOpenDialog({
+      const selectPath = vscode.window.showOpenDialog({
         canSelectFiles: false,
         canSelectFolders: true,
         canSelectMany: true,
@@ -14,18 +14,35 @@ export function activate(context: vscode.ExtensionContext) {
       });
 
       // get the path of the selected folder
-      folderPath.then((value) => {
+      selectPath.then((value) => {
         if (value) {
           const folderPath = value[0].fsPath;
-          vscode.window.showInformationMessage(folderPath);
-          console.log(folderPath);
+
+          // get logFolders from the workspace settings
+          const logFolders = vscode.workspace
+            .getConfiguration("log-whisperer")
+            .get("logFolders");
+
+          // update logFolders in the workspace settings and push the new folder path
+          if (Array.isArray(logFolders) && !logFolders.includes(folderPath)) {
+            const newLogFolders = logFolders;
+            newLogFolders.push(folderPath);
+            vscode.workspace
+              .getConfiguration("log-whisperer")
+              .update(
+                "logFolders",
+                newLogFolders,
+                vscode.ConfigurationTarget.Workspace
+              );
+
+            // get the last folder in the path
+            const folderName = folderPath.split("/").pop();
+            vscode.window.showInformationMessage(
+              `A new path was added to logFolders settings: ../${folderName}`
+            );
+          }
         }
       });
-
-      // save the path in the workspace settings
-      vscode.workspace
-        .getConfiguration("log-whisperer")
-        .update("logFolder", folderPath, vscode.ConfigurationTarget.Workspace);
     }
   );
 
