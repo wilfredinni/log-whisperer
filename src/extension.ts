@@ -72,6 +72,13 @@ export function activate(context: vscode.ExtensionContext) {
                         });
                       }
                       console.log(logIndexes);
+                      // save the logIndexes in an external file
+                      vscode.workspace.fs.writeFile(
+                        vscode.Uri.file(
+                          `../log-whisperer/${folderName}/logIndexes.json`
+                        ),
+                        Buffer.from(JSON.stringify(logIndexes))
+                      );
                     });
                   });
                 }
