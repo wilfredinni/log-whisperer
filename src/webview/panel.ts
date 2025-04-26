@@ -48,6 +48,25 @@ export class LogViewerPanel {
     this.panel.webview.onDidReceiveMessage(
       async (message: WebviewMessage) => {
         switch (message.command) {
+          case "openLogFile":
+            if (message.path) {
+              const document = await vscode.workspace.openTextDocument(
+                vscode.Uri.file(message.path)
+              );
+              const editor = await vscode.window.showTextDocument(document);
+
+              // If line number is provided, move to that line
+              if (typeof message.line === "number") {
+                const line = message.line - 1; // Convert to 0-based
+                const range = document.lineAt(line).range;
+                editor.selection = new vscode.Selection(
+                  range.start,
+                  range.start
+                );
+                editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
+              }
+            }
+            break;
           case "filterLogs":
             if (
               typeof message.level === "string" ||

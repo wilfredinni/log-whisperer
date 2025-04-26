@@ -18,6 +18,8 @@ export async function* parseLogFileStream(
   let bytesProcessed = 0;
   const totalBytes = fileContent.length;
   const entries: LogEntry[] = [];
+  const filePath = uri.fsPath;
+  let lineNumber = 0;
 
   for (let i = 0; i < fileContent.length; i += CHUNK_SIZE) {
     const chunk = fileContent.slice(i, i + CHUNK_SIZE);
@@ -28,6 +30,7 @@ export async function* parseLogFileStream(
     buffer = lines.pop() || "";
 
     for (const line of lines) {
+      lineNumber++;
       if (!line.trim()) {
         continue;
       }
@@ -43,6 +46,8 @@ export async function* parseLogFileStream(
           level,
           message,
           raw: line,
+          filePath,
+          lineNumber
         });
       }
     }
@@ -57,6 +62,7 @@ export async function* parseLogFileStream(
 
   // Process any remaining content in the buffer
   if (buffer) {
+    lineNumber++;
     const match = buffer.match(
       /^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d{3})\s+([\w.]+)\s+(\w+)\s+(.+)$/
     );
@@ -68,6 +74,8 @@ export async function* parseLogFileStream(
         level,
         message,
         raw: buffer,
+        filePath,
+        lineNumber
       });
     }
   }

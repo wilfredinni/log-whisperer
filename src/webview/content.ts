@@ -50,19 +50,30 @@ export function getWebviewContent(
                 position: absolute;
                 left: 0;
                 right: 0;
-                height: 40px;
+                min-height: 40px;
                 padding: 8px;
                 box-sizing: border-box;
                 background: var(--vscode-editor-background);
                 border-left: 3px solid transparent;
                 display: flex;
-                align-items: center;
+                align-items: flex-start;
                 gap: 8px;
                 font-family: var(--vscode-editor-font-family);
+                cursor: pointer;
+            }
+            .log-entry:hover {
+                background: var(--vscode-list-hoverBackground);
+            }
+            .log-entry.expanded .message {
+                white-space: pre-wrap;
             }
             .timestamp {
                 color: var(--vscode-textPreformat-foreground);
                 white-space: nowrap;
+                cursor: pointer;
+            }
+            .timestamp:hover {
+                text-decoration: underline;
             }
             .logger {
                 color: var(--vscode-textLink-foreground);
@@ -76,6 +87,11 @@ export function getWebviewContent(
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
+            }
+            .message.has-multiline::after {
+                content: '⌄';
+                margin-left: 4px;
+                color: var(--vscode-textLink-foreground);
             }
             .filter-group {
                 display: flex;
@@ -99,6 +115,20 @@ export function getWebviewContent(
             }
             button:hover {
                 background: var(--vscode-button-hoverBackground);
+            }
+            .goto-file {
+                opacity: 0.6;
+                cursor: pointer;
+                padding: 4px;
+                border-radius: 4px;
+            }
+            .goto-file:hover {
+                opacity: 1;
+                background: var(--vscode-button-hoverBackground);
+            }
+            .goto-file[data-disabled] {
+                opacity: 0.3;
+                cursor: not-allowed;
             }
         </style>
     </head>
@@ -174,10 +204,12 @@ export function getWebviewContent(
                     div.className = 'log-entry';
                     div.style.top = \`\${i * ROW_HEIGHT}px\`;
                     div.style.borderLeftColor = getLogLevelColor(log.level);
+                    div.dataset.index = i;
 
                     const timestamp = document.createElement('span');
                     timestamp.className = 'timestamp';
                     timestamp.textContent = \`[\${log.timestamp}]\`;
+                    timestamp.title = 'Click to open file at this log line';
 
                     const logger = document.createElement('span');
                     logger.className = 'logger';
@@ -190,12 +222,69 @@ export function getWebviewContent(
 
                     const message = document.createElement('span');
                     message.className = 'message';
+                    if (log.raw && log.raw !== log.message) {
+                        message.classList.add('has-multiline');
+                    }
                     message.textContent = log.message;
+
+                    const gotoFile = document.createElement('span');
+                    gotoFile.className = 'goto-file';
+                    gotoFile.textContent = '👁️';
+                    gotoFile.title = log.filePath ? 'Go to this log in file' : 'File path not available';
+                    if (!log.filePath) {
+                        gotoFile.dataset.disabled = 'true';
+                    } else {
+                        gotoFile.addEventListener('click', () => {
+                            vscode.postMessage({
+                                command: 'openLogFile',
+                                path: log.filePath,
+                                line: log.lineNumber
+                            });
+                        });
+                    }
 
                     div.appendChild(timestamp);
                     div.appendChild(logger);
                     div.appendChild(level);
                     div.appendChild(message);
+                    div.appendChild(gotoFile);
+
+                    // Add click handlers
+                    timestamp.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (log.filePath) {
+                            vscode.postMessage({
+                                command: 'openLogFile',
+                                path: log.filePath,
+                                line: log.lineNumber
+                            });
+                        }
+                    });
+
+                    div.addEventListener('click', () => {
+                        if (log.raw && log.raw !== log.message) {
+                            div.classList.toggle('expanded');
+                            message.textContent = div.classList.contains('expanded') ? log.raw : log.message;
+
+                            // Adjust height when expanded
+                            const lines = log.raw.split('\\n').length;
+                            const newHeight = div.classList.contains('expanded') ?
+                                Math.max(40, lines * 20) : 40; // 20px per line
+
+                            div.style.height = \`\${newHeight}px\`;
+
+                            // Update positions of elements below
+                            const currentIndex = parseInt(div.dataset.index);
+                            const heightDiff = newHeight - ROW_HEIGHT;
+
+                            const followingElements = document.querySelectorAll(\`.log-entry[data-index="\${currentIndex + 1}"]\`);
+                            followingElements.forEach(el => {
+                                const currentTop = parseInt(el.style.top);
+                                el.style.top = \`\${currentTop + heightDiff}px\`;
+                            });
+                        }
+                    });
+
                     fragment.appendChild(div);
                 }
 
