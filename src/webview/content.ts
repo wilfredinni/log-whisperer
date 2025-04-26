@@ -5,10 +5,10 @@ const BASE_STYLES = `
     body {
         padding: 0;
         margin: 0;
-        font-family: var(--vscode-editor-font-family);
-        color: var(--vscode-editor-foreground);
+        font-family: var(--vscode-font-family);
+        color: var(--vscode-foreground);
         background: var(--vscode-editor-background);
-        font-size: var(--vscode-editor-font-size);
+        font-size: var(--vscode-font-size);
         overflow: hidden;
         height: 100vh;
     }
@@ -20,42 +20,122 @@ const BASE_STYLES = `
     }
 
     .header {
-        position: sticky;
-        top: 0;
-        z-index: 100;
-        background: var(--vscode-editorGroupHeader-tabsBackground);
-        border-bottom: 1px solid var(--vscode-editorGroup-border);
+        background: var(--vscode-editor-background);
+        border-bottom: thin solid var(--vscode-panel-border);
+        padding: 12px 16px;
     }
 
     .stats {
-        padding: 8px 12px;
-        font-size: 11px;
+        margin-bottom: 16px;
     }
 
-    .stats h3 {
-        margin: 0 0 6px 0;
+    .stats-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+    }
+
+    .stats-header h3 {
+        margin: 0;
         font-size: 11px;
-        font-weight: 400;
-        text-transform: uppercase;
-        color: var(--vscode-sideBarTitle-foreground);
-        letter-spacing: 0.04em;
+        font-weight: normal;
+        color: var(--vscode-foreground);
+        opacity: 0.8;
     }
 
     .stats-total {
-        margin: 0 0 6px 0;
         font-size: 11px;
-        font-weight: 400;
-        color: var(--vscode-sideBarTitle-foreground);
-        letter-spacing: 0.04em;
+        color: var(--vscode-descriptionForeground);
+    }
+
+    .stats-levels {
+        display: flex;
+        gap: 16px;
+    }
+
+    .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+    }
+
+    .level-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+    }
+
+    .stat-count {
+        font-weight: 600;
+    }
+
+    .stat-label {
+        color: var(--vscode-descriptionForeground);
     }
 
     .filters {
-        padding: 6px 12px;
         display: flex;
-        gap: 8px;
+        gap: 12px;
         align-items: center;
         flex-wrap: wrap;
-        border-bottom: 1px solid var(--vscode-editorGroup-border);
+    }
+
+    .filter-group {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .filter-group label {
+        font-size: 11px;
+        color: var(--vscode-descriptionForeground);
+    }
+
+    input[type="text"], select {
+        background: var(--vscode-input-background);
+        color: var(--vscode-input-foreground);
+        border: 1px solid transparent;
+        font-size: 11px;
+        height: 22px;
+        border-radius: 2px;
+        padding: 0 6px;
+    }
+
+    input[type="text"] {
+        min-width: 200px;
+    }
+
+    select {
+        min-width: 100px;
+        padding-right: 20px;
+        appearance: none;
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3e%3cpath fill='%23C5C5C5' d='M7.976 10.072l4.357-4.357.62.618L8.284 11h-.618L3 6.333l.619-.618 4.357 4.357z'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 4px center;
+    }
+
+    input[type="text"]:focus, select:focus {
+        outline: 1px solid var(--vscode-focusBorder);
+        border-color: transparent;
+    }
+
+    button {
+        background: none;
+        border: none;
+        color: var(--vscode-textLink-foreground);
+        font-size: 11px;
+        padding: 0;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    button:hover {
+        color: var(--vscode-textLink-activeForeground);
+        text-decoration: underline;
     }
 
     .table-container {
@@ -169,12 +249,11 @@ const BASE_STYLES = `
 
     /* Level indicators */
     .level-indicator {
-        display: inline-block;
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        margin-right: 6px;
-        vertical-align: middle;
+        display: inline-flex;
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+        margin-right: 8px;
     }
 
     /* Level badge styling */
@@ -216,21 +295,21 @@ const FILTER_STYLES = `
     .filter-group {
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 8px;
     }
     .filter-group label {
         font-size: 11px;
-        opacity: 0.8;
+        color: var(--vscode-descriptionForeground);
     }
     .filter-group input[type="text"] {
         background: var(--vscode-input-background);
         color: var(--vscode-input-foreground);
         border: 1px solid var(--vscode-input-border);
-        padding: 2px 6px;
+        padding: 4px 8px;
         font-size: 11px;
-        border-radius: 2px;
-        height: 22px;
-        min-width: 200px;
+        border-radius: 3px;
+        height: 24px;
+        min-width: 220px;
     }
     .filter-group input[type="text"]:focus {
         outline: 1px solid var(--vscode-focusBorder);
@@ -240,16 +319,16 @@ const FILTER_STYLES = `
         background: var(--vscode-dropdown-background);
         color: var(--vscode-dropdown-foreground);
         border: 1px solid var(--vscode-dropdown-border);
-        padding: 0 20px 0 6px;
+        padding: 0 24px 0 8px;
         font-size: 11px;
-        border-radius: 2px;
-        height: 22px;
-        min-width: 100px;
+        border-radius: 3px;
+        height: 24px;
+        min-width: 120px;
         cursor: pointer;
         appearance: none;
         background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3e%3cpath fill='%23C5C5C5' d='M7.976 10.072l4.357-4.357.62.618L8.284 11h-.618L3 6.333l.619-.618 4.357 4.357z'/%3e%3c/svg%3e");
         background-repeat: no-repeat;
-        background-position: right 4px center;
+        background-position: right 6px center;
     }
     select:focus {
         outline: 1px solid var(--vscode-focusBorder);
@@ -259,10 +338,10 @@ const FILTER_STYLES = `
         background: var(--vscode-button-secondaryBackground);
         color: var(--vscode-button-secondaryForeground);
         border: none;
-        padding: 2px 8px;
-        border-radius: 2px;
+        padding: 0 10px;
+        border-radius: 3px;
         cursor: pointer;
-        height: 22px;
+        height: 24px;
         font-size: 11px;
         display: flex;
         align-items: center;
@@ -276,15 +355,22 @@ const FILTER_STYLES = `
 function generateStatsHTML(stats: LogStats): string {
   return `
         <div class="stats">
-            <h3>Log Statistics</h3>
-            <p class="stats-total">Showing ${stats.totalEntries} logs</p>
+            <div class="stats-header">
+                <h3>Log Statistics</h3>
+                <span class="stats-total">${stats.totalEntries} logs</span>
+            </div>
             <div class="stats-levels">
                 ${Object.entries(stats.totalByLevel)
                   .map(
-                    ([level, count]) =>
-                      `<div><span class="level-indicator" style="background: ${getLogLevelColor(
-                        level
-                      )}"></span>${level}: ${count}</div>`
+                    ([level, count]) => `
+                        <div class="stat-item">
+                            <span class="level-dot" style="background: ${getLogLevelColor(
+                              level
+                            )}"></span>
+                            <span class="stat-count">${count}</span>
+                            <span class="stat-label">${level}</span>
+                        </div>
+                    `
                   )
                   .join("")}
             </div>
@@ -355,12 +441,18 @@ export function getWebviewContent(
   const generateStatsHTMLClient = `function generateStatsHTML(stats) {
         return \`
             <div class="stats">
-                <h3>Log Statistics</h3>
-                <p class="stats-total">Showing \${stats.totalEntries} logs</p>
+                <div class="stats-header">
+                    <h3>Log Statistics</h3>
+                    <span class="stats-total">\${stats.totalEntries} logs</span>
+                </div>
                 <div class="stats-levels">
                     \${Object.entries(stats.totalByLevel)
                         .map(([level, count]) => 
-                            \`<div><span class="level-indicator" style="background: \${getLogLevelColor(level)}"></span>\${level}: \${count}</div>\`)
+                            \`<div class="stat-item">
+                                <span class="level-dot" style="background: \${getLogLevelColor(level)}"></span>
+                                <span class="stat-count">\${count}</span>
+                                <span class="stat-label">\${level}</span>
+                            </div>\`)
                         .join('')}
                 </div>
             </div>
