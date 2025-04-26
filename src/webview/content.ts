@@ -58,9 +58,6 @@ const LOG_ENTRY_STYLES = `
     .log-entry:hover {
         background: var(--vscode-list-hoverBackground);
     }
-    .log-entry.expanded .message {
-        white-space: pre-wrap;
-    }
     .timestamp {
         color: var(--vscode-textPreformat-foreground);
         white-space: nowrap;
@@ -81,11 +78,6 @@ const LOG_ENTRY_STYLES = `
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-    }
-    .message.has-multiline::after {
-        content: '⌄';
-        margin-left: 4px;
-        color: var(--vscode-textLink-foreground);
     }
 `;
 
@@ -210,7 +202,6 @@ export function getWebviewContent(
             const ROW_HEIGHT = 40;
             const BUFFER_SIZE = 50;
             let logs = ${JSON.stringify(logs)};
-            const expandedEntries = new Map();
             const virtualScroller = document.getElementById('virtualScroller');
             const logEntriesContainer = document.getElementById('logEntries');
 
@@ -284,10 +275,7 @@ export function getWebviewContent(
             function createMessageElement(log, index) {
                 const message = document.createElement('span');
                 message.className = 'message';
-                if (log.raw && log.raw !== log.message) {
-                    message.classList.add('has-multiline');
-                }
-                message.textContent = expandedEntries.has(index) ? log.raw : log.message;
+                message.textContent = log.raw || log.message;
                 return message;
             }
 
@@ -325,64 +313,43 @@ export function getWebviewContent(
                     }
                 });
 
-                // Entry click handler
-                div.addEventListener('click', () => {
-                    if (log.raw && log.raw !== log.message) {
-                        toggleEntryExpansion(div, log, index);
-                    }
-                });
             }
 
-            function toggleEntryExpansion(div, log, index) {
-                const isExpanding = !div.classList.contains('expanded');
-                div.classList.toggle('expanded');
-
-                // Update message content
-                const message = div.querySelector('.message');
-                message.textContent = isExpanding ? log.raw : log.message;
-
-                // Calculate new height
-                const lines = log.raw.split('\\n').length;
-                const newHeight = isExpanding ? Math.max(40, lines * 20) : 40;
-
-                // Track expansion state
-                if (isExpanding) {
-                    expandedEntries.set(index, newHeight);
-                } else {
-                    expandedEntries.delete(index);
-                }
-
-                // Update UI
-                renderVisibleLogs();
-
-                // Keep entry visible
-                const entryTop = getEntryTop(index);
-                if (entryTop < virtualScroller.scrollTop) {
-                    virtualScroller.scrollTop = entryTop;
-                }
-            }
 
             function renderVisibleLogs() {
-                // Calculate total height
-                let totalHeight = logs.length * ROW_HEIGHT;
-                for (const [_, height] of expandedEntries.entries()) {
-                    totalHeight += (height - ROW_HEIGHT);
-                }
-                logEntriesContainer.style.height = \`\${totalHeight}px\`;
-
-                // Determine visible range
-                const scrollTop = virtualScroller.scrollTop;
-                const containerHeight = virtualScroller.clientHeight;
-                const { startIdx, endIdx } = calculateVisibleRange(scrollTop, containerHeight);
-
-                // Render visible entries
-                const fragment = document.createDocumentFragment();
-                for (let i = startIdx; i < endIdx; i++) {
-                    fragment.appendChild(createLogEntryElement(logs[i], i));
-                }
-
                 logEntriesContainer.innerHTML = '';
-                logEntriesContainer.appendChild(fragment);
+                
+                // Calculate container height based on number of logs
+                logEntriesContainer.style.height = \`\${logs.length * ROW_HEIGHT}px\`;
+                
+                logs.forEach((log, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'log-entry';
+                    div.style.top = \`\${index * ROW_HEIGHT}px\`;
+                    div.style.height = \`\${ROW_HEIGHT}px\`;
+                    div.style.borderLeftColor = getLogLevelColor(log.level);
+                    
+                    div.innerHTML = \`
+                        <span class="timestamp">[\${log.timestamp}]</span>
+                        <span class="logger">\${log.logger}</span>
+                        <span class="level" style="color: \${getLogLevelColor(log.level)}">\${log.level}</span>
+                        <span class="message">\${log.message}</span>
+                        \${log.filePath ? '<span class="goto-file" title="Go to this log in file">👁️</span>' : ''}
+                    \`;
+                    
+                    if (log.filePath) {
+                        div.querySelector('.goto-file').addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            vscode.postMessage({
+                                command: 'openLogFile',
+                                path: log.filePath,
+                                line: log.lineNumber
+                            });
+                        });
+                    }
+                    
+                    logEntriesContainer.appendChild(div);
+                });
             }
 
             function calculateVisibleRange(scrollTop, containerHeight) {
@@ -393,8 +360,7 @@ export function getWebviewContent(
 
                 // Find start index
                 for (let i = 0; i < logs.length; i++) {
-                    const entryHeight = expandedEntries.has(i) ? expandedEntries.get(i) : ROW_HEIGHT;
-                    if (currentHeight + entryHeight > scrollTop - ROW_HEIGHT * BUFFER_SIZE) {
+                    if (currentHeight + ROW_HEIGHT > scrollTop - ROW_HEIGHT * BUFFER_SIZE) {
                         startIdx = i;
                         break;
                     }
@@ -404,8 +370,7 @@ export function getWebviewContent(
                 // Find end index
                 endIdx = startIdx;
                 while (endIdx < logs.length && visibleHeight < containerHeight + ROW_HEIGHT * BUFFER_SIZE * 2) {
-                    const entryHeight = expandedEntries.has(endIdx) ? expandedEntries.get(endIdx) : ROW_HEIGHT;
-                    visibleHeight += entryHeight;
+                    visibleHeight += ROW_HEIGHT;
                     endIdx++;
                 }
 
@@ -441,14 +406,12 @@ export function getWebviewContent(
 
                 document.getElementById('clearFilters').addEventListener('click', () => {
                     vscode.postMessage({ command: 'clearFilters' });
-                    expandedEntries.clear();
                 });
 
                 window.addEventListener('message', event => {
                     const message = event.data;
                     if (message.command === 'updateLogs') {
                         logs = message.logs;
-                        expandedEntries.clear();
                         renderVisibleLogs();
                     }
                 });
