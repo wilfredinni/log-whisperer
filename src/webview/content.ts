@@ -170,6 +170,7 @@ const BASE_STYLES = `
         padding: 4px 8px;
         border-right: 1px solid var(--vscode-editorGroup-border);
         white-space: nowrap;
+        font-size: 11px;
     }
 
     .log-table th {
@@ -187,7 +188,8 @@ const BASE_STYLES = `
     }
 
     .log-table td {
-        font-size: var(--vscode-editor-font-size);
+        font-size: var(--vscode-font-size);
+        font-family: var(--vscode-editor-font-family);
         border-bottom: 1px solid var(--vscode-editor-lineHighlightBorder);
     }
 
@@ -290,7 +292,7 @@ const BASE_STYLES = `
 
     .level-badge[data-level="debug"],
     .level-badge[data-level="trace"] {
-        background-color: var(--vscode-textLink-foreground);
+        background-color: var(--vscode-foreground);
         color: var(--vscode-editor-background);
     }
 `;
