@@ -54,13 +54,15 @@ const BASE_STYLES = `
         flex: 1;
         overflow: auto;
         position: relative;
+        padding-bottom: 16px; /* Add some bottom padding for better scrolling experience */
     }
 
     .log-table {
-        width: 100%;
+        width: max-content;
+        min-width: 100%;
+        table-layout: auto;
         border-collapse: collapse;
         border-spacing: 0;
-        table-layout: fixed;
     }
 
     .log-table-header {
@@ -71,27 +73,30 @@ const BASE_STYLES = `
         border-bottom: 1px solid var(--vscode-editorGroup-border);
     }
 
+    .log-table th,
+    .log-table td {
+        padding: 4px 8px;
+        border-right: 1px solid var(--vscode-editorGroup-border);
+        white-space: nowrap;
+    }
+
     .log-table th {
+        position: sticky;
+        top: 0;
         font-weight: 400;
         text-align: left;
-        padding: 6px 8px;
         font-size: 11px;
         color: var(--vscode-foreground);
         text-transform: uppercase;
         letter-spacing: 0.04em;
-        white-space: nowrap;
         user-select: none;
-        border-right: 1px solid var(--vscode-editorGroup-border);
+        background: var(--vscode-editorGroupHeader-tabsBackground);
+        z-index: 2;
     }
 
     .log-table td {
-        padding: 4px 8px;
         font-size: var(--vscode-editor-font-size);
         border-bottom: 1px solid var(--vscode-editor-lineHighlightBorder);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        border-right: 1px solid var(--vscode-editorGroup-border);
     }
 
     .log-table tr:hover {
@@ -103,12 +108,56 @@ const BASE_STYLES = `
         outline-offset: -1px;
     }
 
-    /* Column widths */
-    .col-actions { width: 30px; }
-    .col-timestamp { width: 180px; }
-    .col-level { width: 80px; }
-    .col-logger { width: 150px; }
-    .col-message { min-width: 300px; }
+    /* Column widths - updated for proper auto-growing */
+    .col-actions { 
+        width: 30px;
+        min-width: 30px;
+        max-width: 30px;
+    }
+    
+    .col-timestamp { 
+        min-width: 140px;
+    }
+    
+    .col-level { 
+        min-width: 70px;
+    }
+    
+    .col-logger { 
+        min-width: 100px;
+    }
+    
+    .col-message { 
+        min-width: 200px;
+    }
+
+    /* Make message column take remaining space while allowing table to scroll horizontally */
+    .col-message { 
+        width: 100%;
+    }
+
+    /* Ensure the table container allows horizontal scrolling */
+    .table-container {
+        flex: 1;
+        overflow: auto;
+        position: relative;
+        padding-bottom: 16px; /* Add some bottom padding for better scrolling experience */
+    }
+
+    /* Remove fixed widths and overflow constraints from cells that should grow */
+    .col-timestamp,
+    .col-level,
+    .col-logger {
+        width: auto;
+        overflow: visible;
+    }
+
+    /* Keep message column with ellipsis */
+    td.col-message {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
 
     /* Level indicators */
     .level-indicator {
