@@ -12,7 +12,7 @@ export class LogViewerPanel {
   private panel: vscode.WebviewPanel;
   private allLogs: LogEntry[];
   private currentLogs: LogEntry[];
-  private filters: LogFilters = { level: "", logger: "" };
+  private filters: LogFilters = { level: "", logger: "", search: "" };
   private readonly CHUNK_SIZE = 1000;
   private isLoading: boolean = true;
 
@@ -75,7 +75,8 @@ export class LogViewerPanel {
           case "filterLogs":
             if (
               typeof message.level === "string" ||
-              typeof message.logger === "string"
+              typeof message.logger === "string" ||
+              typeof message.search === "string"
             ) {
               this.filters = {
                 level:
@@ -86,21 +87,17 @@ export class LogViewerPanel {
                   typeof message.logger === "string"
                     ? message.logger
                     : this.filters.logger,
+                search:
+                  typeof message.search === "string"
+                    ? message.search
+                    : this.filters.search,
               };
               await this.applyFiltersAsync();
             }
             break;
           case "clearFilters":
-            this.filters = { level: "", logger: "" };
-            this.currentLogs = this.allLogs;
-            const stats = this.calculateStats();
-            this.panel.webview.postMessage({
-              command: "updateLogs",
-              logs: this.currentLogs,
-              stats,
-              filters: this.filters,
-              isLoading: this.isLoading,
-            });
+            this.filters = { level: "", logger: "", search: "" };
+            await this.applyFiltersAsync();
             break;
         }
       },
@@ -133,7 +130,18 @@ export class LogViewerPanel {
             log.level.toLowerCase() === this.filters.level.toLowerCase();
           const loggerMatch =
             !this.filters.logger || log.logger === this.filters.logger;
-          return levelMatch && loggerMatch;
+          const searchMatch =
+            !this.filters.search ||
+            log.level
+              .toLowerCase()
+              .includes(this.filters.search.toLowerCase()) ||
+            log.logger
+              .toLowerCase()
+              .includes(this.filters.search.toLowerCase()) ||
+            log.message
+              .toLowerCase()
+              .includes(this.filters.search.toLowerCase());
+          return levelMatch && loggerMatch && searchMatch;
         });
 
         filteredLogs = filteredLogs.concat(filteredChunk);
@@ -156,7 +164,14 @@ export class LogViewerPanel {
           log.level.toLowerCase() === this.filters.level.toLowerCase();
         const loggerMatch =
           !this.filters.logger || log.logger === this.filters.logger;
-        return levelMatch && loggerMatch;
+        const searchMatch =
+          !this.filters.search ||
+          log.level.toLowerCase().includes(this.filters.search.toLowerCase()) ||
+          log.logger
+            .toLowerCase()
+            .includes(this.filters.search.toLowerCase()) ||
+          log.message.toLowerCase().includes(this.filters.search.toLowerCase());
+        return levelMatch && loggerMatch && searchMatch;
       });
     }
 

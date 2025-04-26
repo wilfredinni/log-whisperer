@@ -222,6 +222,20 @@ const FILTER_STYLES = `
         font-size: 11px;
         opacity: 0.8;
     }
+    .filter-group input[type="text"] {
+        background: var(--vscode-input-background);
+        color: var(--vscode-input-foreground);
+        border: 1px solid var(--vscode-input-border);
+        padding: 2px 6px;
+        font-size: 11px;
+        border-radius: 2px;
+        height: 22px;
+        min-width: 200px;
+    }
+    .filter-group input[type="text"]:focus {
+        outline: 1px solid var(--vscode-focusBorder);
+        outline-offset: -1px;
+    }
     select {
         background: var(--vscode-dropdown-background);
         color: var(--vscode-dropdown-foreground);
@@ -281,6 +295,12 @@ function generateStatsHTML(stats: LogStats): string {
 function generateFiltersHTML(stats: LogStats, filters: LogFilters): string {
   return `
         <div class="filters">
+            <div class="filter-group">
+                <label>Search:</label>
+                <input type="text" id="searchFilter" placeholder="Search in level, logger, message..." value="${
+                  filters.search || ""
+                }" />
+            </div>
             <div class="filter-group">
                 <label>Level:</label>
                 <select id="levelFilter">
@@ -350,6 +370,10 @@ export function getWebviewContent(
   const generateFiltersHTMLClient = `function generateFiltersHTML(stats, filters) {
         return \`
             <div class="filters">
+                <div class="filter-group">
+                    <label>Search:</label>
+                    <input type="text" id="searchFilter" placeholder="Search in level, logger, message..." value="\${filters.search || ''}" />
+                </div>
                 <div class="filter-group">
                     <label>Level:</label>
                     <select id="levelFilter">
@@ -469,6 +493,7 @@ export function getWebviewContent(
                 // Reattach event listeners
                 const levelFilter = document.getElementById('levelFilter');
                 const loggerFilter = document.getElementById('loggerFilter');
+                const searchFilter = document.getElementById('searchFilter');
                 const clearFiltersBtn = document.getElementById('clearFilters');
                 
                 if (levelFilter) {
@@ -488,6 +513,20 @@ export function getWebviewContent(
                             command: 'filterLogs',
                             logger: e.target.value
                         });
+                    });
+                }
+
+                if (searchFilter) {
+                    searchFilter.value = filters.search || '';
+                    let searchTimeout;
+                    searchFilter.addEventListener('input', (e) => {
+                        clearTimeout(searchTimeout);
+                        searchTimeout = setTimeout(() => {
+                            vscode.postMessage({
+                                command: 'filterLogs',
+                                search: e.target.value
+                            });
+                        }, 300); // Debounce search for better performance
                     });
                 }
 

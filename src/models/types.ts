@@ -50,6 +50,7 @@ export interface WebviewMessage {
   command: WebviewMessageCommand;
   level?: string;
   logger?: string;
+  search?: string;
   path?: string;
   type?: string;
   logs?: LogEntry[];
