@@ -93,7 +93,14 @@ export class LogViewerPanel {
           case "clearFilters":
             this.filters = { level: "", logger: "" };
             this.currentLogs = this.allLogs;
-            this.updateWebview();
+            const stats = this.calculateStats();
+            this.panel.webview.postMessage({
+              command: "updateLogs",
+              logs: this.currentLogs,
+              stats,
+              filters: this.filters,
+              isLoading: this.isLoading,
+            });
             break;
         }
       },
