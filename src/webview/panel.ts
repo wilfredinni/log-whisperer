@@ -14,6 +14,7 @@ export class LogViewerPanel {
   private currentLogs: LogEntry[];
   private filters: LogFilters = { level: "", logger: "" };
   private readonly CHUNK_SIZE = 1000;
+  private isLoading: boolean = true;
 
   constructor(
     context: vscode.ExtensionContext,
@@ -35,6 +36,12 @@ export class LogViewerPanel {
 
     this.setupMessageHandling(context);
     this.updateWebview();
+  }
+
+  public updateEntries(entries: LogEntry[], isLoading: boolean = false) {
+    this.allLogs = entries;
+    this.isLoading = isLoading;
+    this.applyFiltersAsync(true); // true indicates this is a progressive update
   }
 
   private setupMessageHandling(context: vscode.ExtensionContext) {
@@ -80,33 +87,46 @@ export class LogViewerPanel {
     );
   }
 
-  private async applyFiltersAsync() {
-    const startTime = Date.now();
-    let filteredLogs: LogEntry[] = [];
+  private async applyFiltersAsync(isProgressiveUpdate: boolean = false) {
+    if (!isProgressiveUpdate) {
+      // Only show filtering progress for user-initiated filters
+      const startTime = Date.now();
+      let filteredLogs: LogEntry[] = [];
 
-    // Process logs in chunks to avoid blocking the UI
-    for (let i = 0; i < this.allLogs.length; i += this.CHUNK_SIZE) {
-      const chunk = this.allLogs.slice(i, i + this.CHUNK_SIZE);
-      const filteredChunk = chunk.filter((log) => {
+      // Process logs in chunks to avoid blocking the UI
+      for (let i = 0; i < this.allLogs.length; i += this.CHUNK_SIZE) {
+        const chunk = this.allLogs.slice(i, i + this.CHUNK_SIZE);
+        const filteredChunk = chunk.filter((log) => {
+          const levelMatch =
+            !this.filters.level || log.level === this.filters.level;
+          const loggerMatch =
+            !this.filters.logger || log.logger === this.filters.logger;
+          return levelMatch && loggerMatch;
+        });
+
+        filteredLogs = filteredLogs.concat(filteredChunk);
+
+        // Every 100ms, update the UI with progress
+        if (Date.now() - startTime > 100) {
+          this.currentLogs = filteredLogs;
+          const progress = Math.round((i / this.allLogs.length) * 100);
+          this.updateWebviewWithProgress(progress);
+          await new Promise((resolve) => setTimeout(resolve, 0)); // Let UI breathe
+        }
+      }
+
+      this.currentLogs = filteredLogs;
+    } else {
+      // For progressive updates, apply filters immediately
+      this.currentLogs = this.allLogs.filter((log) => {
         const levelMatch =
           !this.filters.level || log.level === this.filters.level;
         const loggerMatch =
           !this.filters.logger || log.logger === this.filters.logger;
         return levelMatch && loggerMatch;
       });
-
-      filteredLogs = filteredLogs.concat(filteredChunk);
-
-      // Every 100ms, update the UI with progress
-      if (Date.now() - startTime > 100) {
-        this.currentLogs = filteredLogs;
-        const progress = Math.round((i / this.allLogs.length) * 100);
-        this.updateWebviewWithProgress(progress);
-        await new Promise((resolve) => setTimeout(resolve, 0)); // Let UI breathe
-      }
     }
 
-    this.currentLogs = filteredLogs;
     this.updateWebview();
   }
 
@@ -119,12 +139,15 @@ export class LogViewerPanel {
       logs: this.currentLogs,
       stats,
       filters: this.filters,
+      isLoading: this.isLoading,
+      progress,
     });
   }
 
   private calculateStats(): LogStats {
     const stats: LogStats = {
-      totalEntries: this.currentLogs.length,
+      totalEntries:
+        this.currentLogs.length + (this.isLoading ? "... (Loading)" : ""),
       byLevel: {} as Record<string, number>,
       byLogger: {} as Record<string, number>,
       allLevels: [...new Set(this.allLogs.map((log) => log.level))],

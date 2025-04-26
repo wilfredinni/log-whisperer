@@ -1,40 +1,91 @@
+import * as vscode from "vscode";
 import { LogEntry } from "../models/types";
 
-export function parseLogFile(content: string): LogEntry[] {
-  const lines = content.split("\n");
-  const logs: LogEntry[] = [];
+export interface ParseProgress {
+  entries: LogEntry[];
+  isDone: boolean;
+  progress: number;
+}
 
-  for (const line of lines) {
-    if (!line.trim()) {
-      continue;
+const CHUNK_SIZE = 32 * 1024; // 32KB chunks
+
+export async function* parseLogFileStream(
+  uri: vscode.Uri
+): AsyncGenerator<ParseProgress> {
+  const fileContent = await vscode.workspace.fs.readFile(uri);
+  const textDecoder = new TextDecoder();
+  let buffer = "";
+  let bytesProcessed = 0;
+  const totalBytes = fileContent.length;
+  const entries: LogEntry[] = [];
+
+  for (let i = 0; i < fileContent.length; i += CHUNK_SIZE) {
+    const chunk = fileContent.slice(i, i + CHUNK_SIZE);
+    buffer += textDecoder.decode(chunk, { stream: true });
+
+    const lines = buffer.split("\n");
+    // Keep the last line in buffer as it might be incomplete
+    buffer = lines.pop() || "";
+
+    for (const line of lines) {
+      if (!line.trim()) {
+        continue;
+      }
+
+      const match = line.match(
+        /^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d{3})\s+([\w.]+)\s+(\w+)\s+(.+)$/
+      );
+      if (match) {
+        const [, timestamp, logger, level, message] = match;
+        entries.push({
+          timestamp,
+          logger,
+          level,
+          message,
+          raw: line,
+        });
+      }
     }
 
-    // Match Django log format: TIMESTAMP LOGGER LEVEL MESSAGE
-    const match = line.match(
+    bytesProcessed = i + chunk.length;
+    yield {
+      entries: [...entries], // Return a copy of current entries
+      isDone: false,
+      progress: Math.round((bytesProcessed / totalBytes) * 100),
+    };
+  }
+
+  // Process any remaining content in the buffer
+  if (buffer) {
+    const match = buffer.match(
       /^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d{3})\s+([\w.]+)\s+(\w+)\s+(.+)$/
     );
     if (match) {
       const [, timestamp, logger, level, message] = match;
-      logs.push({
+      entries.push({
         timestamp,
         logger,
         level,
         message,
-        raw: line,
+        raw: buffer,
       });
     }
   }
 
-  return logs;
+  yield {
+    entries,
+    isDone: true,
+    progress: 100,
+  };
 }
 
 export function getLogLevelColor(level: string): string {
-  switch (level.toUpperCase()) {
-    case "ERROR":
+  switch (level.toLowerCase()) {
+    case "error":
       return "#ff0000";
-    case "WARNING":
+    case "warning":
       return "#ffa500";
-    case "INFO":
+    case "info":
       return "#00ff00";
     default:
       return "#ffffff";

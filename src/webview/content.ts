@@ -1,21 +1,24 @@
-import { LogEntry, LogStats, LogFilters } from '../models/types';
-import { getLogLevelColor } from '../utils/parser';
+import { LogEntry, LogStats, LogFilters } from "../models/types";
 
-export function getWebviewContent(logs: LogEntry[], stats: LogStats, filters: LogFilters): string {
-    return `<!DOCTYPE html>
+export function getWebviewContent(
+  logs: LogEntry[],
+  stats: LogStats,
+  filters: LogFilters
+): string {
+  return `<!DOCTYPE html>
     <html>
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
-            body { 
-                font-family: var(--vscode-editor-font-family); 
+            body {
+                font-family: var(--vscode-editor-font-family);
                 padding: 10px;
                 color: var(--vscode-foreground);
                 background-color: var(--vscode-editor-background);
                 margin: 0;
             }
-            .stats { 
+            .stats {
                 position: sticky;
                 top: 0;
                 z-index: 100;
@@ -43,7 +46,7 @@ export function getWebviewContent(logs: LogEntry[], stats: LogStats, filters: Lo
             .log-entries {
                 position: relative;
             }
-            .log-entry { 
+            .log-entry {
                 position: absolute;
                 left: 0;
                 right: 0;
@@ -57,11 +60,11 @@ export function getWebviewContent(logs: LogEntry[], stats: LogStats, filters: Lo
                 gap: 8px;
                 font-family: var(--vscode-editor-font-family);
             }
-            .timestamp { 
+            .timestamp {
                 color: var(--vscode-textPreformat-foreground);
                 white-space: nowrap;
             }
-            .logger { 
+            .logger {
                 color: var(--vscode-textLink-foreground);
                 white-space: nowrap;
             }
@@ -104,9 +107,9 @@ export function getWebviewContent(logs: LogEntry[], stats: LogStats, filters: Lo
             <h3>Log Statistics</h3>
             <p>Showing ${stats.totalEntries} entries</p>
             <div style="display: flex; gap: 20px;">
-                ${Object.entries(stats.byLevel).map(([level, count]) => 
-                    `<div>${level}: ${count}</div>`
-                ).join('')}
+                ${Object.entries(stats.byLevel)
+                  .map(([level, count]) => `<div>${level}: ${count}</div>`)
+                  .join("")}
             </div>
         </div>
 
@@ -115,18 +118,28 @@ export function getWebviewContent(logs: LogEntry[], stats: LogStats, filters: Lo
                 <label>Level:</label>
                 <select id="levelFilter">
                     <option value="">All</option>
-                    ${stats.allLevels.map((level: string) => 
-                        `<option value="${level}" ${filters.level === level ? 'selected' : ''}>${level}</option>`
-                    ).join('')}
+                    ${stats.allLevels
+                      .map(
+                        (level: string) =>
+                          `<option value="${level}" ${
+                            filters.level === level ? "selected" : ""
+                          }>${level}</option>`
+                      )
+                      .join("")}
                 </select>
             </div>
             <div class="filter-group">
                 <label>Logger:</label>
                 <select id="loggerFilter">
                     <option value="">All</option>
-                    ${stats.allLoggers.map((logger: string) => 
-                        `<option value="${logger}" ${filters.logger === logger ? 'selected' : ''}>${logger}</option>`
-                    ).join('')}
+                    ${stats.allLoggers
+                      .map(
+                        (logger: string) =>
+                          `<option value="${logger}" ${
+                            filters.logger === logger ? "selected" : ""
+                          }>${logger}</option>`
+                      )
+                      .join("")}
                 </select>
             </div>
             <button id="clearFilters">Clear Filters</button>
@@ -141,19 +154,19 @@ export function getWebviewContent(logs: LogEntry[], stats: LogStats, filters: Lo
             const ROW_HEIGHT = 40;
             const BUFFER_SIZE = 50;
             let logs = ${JSON.stringify(logs)};
-            
+
             const virtualScroller = document.getElementById('virtualScroller');
             const logEntriesContainer = document.getElementById('logEntries');
-            
+
             function renderVisibleLogs() {
                 const scrollTop = virtualScroller.scrollTop;
                 const containerHeight = virtualScroller.clientHeight;
-                
+
                 const startIndex = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - BUFFER_SIZE);
                 const endIndex = Math.min(logs.length, Math.ceil((scrollTop + containerHeight) / ROW_HEIGHT) + BUFFER_SIZE);
-                
+
                 logEntriesContainer.style.height = \`\${logs.length * ROW_HEIGHT}px\`;
-                
+
                 const fragment = document.createDocumentFragment();
                 for (let i = startIndex; i < endIndex; i++) {
                     const log = logs[i];
@@ -161,31 +174,31 @@ export function getWebviewContent(logs: LogEntry[], stats: LogStats, filters: Lo
                     div.className = 'log-entry';
                     div.style.top = \`\${i * ROW_HEIGHT}px\`;
                     div.style.borderLeftColor = getLogLevelColor(log.level);
-                    
+
                     const timestamp = document.createElement('span');
                     timestamp.className = 'timestamp';
                     timestamp.textContent = \`[\${log.timestamp}]\`;
-                    
+
                     const logger = document.createElement('span');
                     logger.className = 'logger';
                     logger.textContent = log.logger;
-                    
+
                     const level = document.createElement('span');
                     level.className = 'level';
                     level.style.color = getLogLevelColor(log.level);
                     level.textContent = log.level;
-                    
+
                     const message = document.createElement('span');
                     message.className = 'message';
                     message.textContent = log.message;
-                    
+
                     div.appendChild(timestamp);
                     div.appendChild(logger);
                     div.appendChild(level);
                     div.appendChild(message);
                     fragment.appendChild(div);
                 }
-                
+
                 logEntriesContainer.innerHTML = '';
                 logEntriesContainer.appendChild(fragment);
             }
@@ -198,7 +211,7 @@ export function getWebviewContent(logs: LogEntry[], stats: LogStats, filters: Lo
                     default: return '#ffffff';
                 }
             }
-            
+
             let scrollTimeout;
             virtualScroller.addEventListener('scroll', () => {
                 if (scrollTimeout) {
@@ -206,10 +219,10 @@ export function getWebviewContent(logs: LogEntry[], stats: LogStats, filters: Lo
                 }
                 scrollTimeout = requestAnimationFrame(renderVisibleLogs);
             });
-            
+
             // Initial render
             renderVisibleLogs();
-            
+
             // Handle filtering
             document.getElementById('levelFilter').addEventListener('change', (e) => {
                 vscode.postMessage({

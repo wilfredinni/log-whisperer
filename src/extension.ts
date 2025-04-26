@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { parseLogFile } from "./utils/parser";
+import { parseLogFileStream } from "./utils/parser";
 import { LogViewerPanel } from "./webview/panel";
 import { LogExplorerViewProvider } from "./webview/sidebarProvider";
 
@@ -12,17 +12,38 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   const handleLogFile = async (fileUri: vscode.Uri) => {
-    const document = await vscode.workspace.openTextDocument(fileUri);
-    const logs = parseLogFile(document.getText());
+    // Create panel immediately to show loading state
+    const panel = new LogViewerPanel(context, [], fileUri.fsPath);
 
-    if (!logs.length) {
-      vscode.window.showInformationMessage(
-        "No valid log entries found in the file."
-      );
-      return;
-    }
+    // Show progress indicator
+    vscode.window.withProgress(
+      {
+        location: vscode.ProgressLocation.Notification,
+        title: "Loading log file",
+        cancellable: false,
+      },
+      async (progress) => {
+        try {
+          let lastProgress = 0;
+          for await (const result of parseLogFileStream(fileUri)) {
+            const increment = result.progress - lastProgress;
+            progress.report({
+              increment,
+              message: `Parsed ${result.entries.length} entries...`,
+            });
+            lastProgress = result.progress;
 
-    new LogViewerPanel(context, logs, fileUri.fsPath);
+            // Update panel with current entries
+            panel.updateEntries(result.entries, !result.isDone);
+          }
+        } catch (err) {
+          const error = err as Error;
+          vscode.window.showErrorMessage(
+            `Error parsing log file: ${error?.message || "Unknown error"}`
+          );
+        }
+      }
+    );
   };
 
   // Register commands

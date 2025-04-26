@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import * as path from "path";
-import { LogEntry, LogFile, LogExplorerState } from "../models/types";
-import { parseLogFile } from "../utils/parser";
+import { LogEntry, LogExplorerState } from "../models/types";
+import { parseLogFileStream } from "../utils/parser";
 
 interface LogSummary {
   total: number;
@@ -26,15 +26,21 @@ export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
     this._state.logFiles = [];
 
     for (const file of logFiles) {
-      const document = await vscode.workspace.openTextDocument(file);
-      const entries = parseLogFile(document.getText());
-
-      this._state.logFiles.push({
-        path: file.fsPath,
-        name: path.basename(file.fsPath),
-        entries: entries,
-        isExpanded: false,
-      });
+      try {
+        const entries: LogEntry[] = [];
+        for await (const result of parseLogFileStream(file)) {
+          if (result.isDone) {
+            this._state.logFiles.push({
+              path: file.fsPath,
+              name: path.basename(file.fsPath),
+              entries: result.entries,
+              isExpanded: false,
+            });
+          }
+        }
+      } catch (err) {
+        console.error(`Error parsing log file ${file.fsPath}:`, err);
+      }
     }
 
     this._updateWebview();
