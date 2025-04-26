@@ -4,6 +4,7 @@ export interface LogEntry {
     logger: string;
     message: string;
     raw: string;
+    filePath?: string;
 }
 
 export interface LogStats {
@@ -19,8 +20,24 @@ export interface LogFilters {
     logger: string;
 }
 
+export interface LogFile {
+    path: string;
+    name: string;
+    entries: LogEntry[];
+    isExpanded?: boolean;
+}
+
+export interface LogExplorerState {
+    currentFolder?: string;
+    logFiles: LogFile[];
+}
+
+export type WebviewMessageCommand = 'filterLogs' | 'clearFilters' | 'selectFolder' | 'expandLogFile' | 'collapseLogFile' | 'openLog' | 'openLogFile' | 'refresh';
+
 export interface WebviewMessage {
-    command: 'filterLogs' | 'clearFilters';
+    command: WebviewMessageCommand;
     level?: string;
     logger?: string;
+    path?: string;
+    type?: string;
 }

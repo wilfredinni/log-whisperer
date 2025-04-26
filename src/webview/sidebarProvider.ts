@@ -1,62 +1,125 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import { LogEntry, LogFile, LogExplorerState } from '../models/types';
+import { parseLogFile } from '../utils/parser';
+
+interface LogSummary {
+    total: number;
+    errors: number;
+    warnings: number;
+    info: number;
+    other: number;
+}
 
 export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
+    private _view?: vscode.WebviewView;
+    private _state: LogExplorerState = { logFiles: [] };
+
     constructor(
         private readonly extensionUri: vscode.Uri,
-    ) {}
+    ) {
+        this.scanWorkspace();
+    }
+
+    private async scanWorkspace() {
+        // Find all log files in the workspace
+        const logFiles = await vscode.workspace.findFiles('**/*.log');
+        
+        this._state.logFiles = [];
+        
+        for (const file of logFiles) {
+            const document = await vscode.workspace.openTextDocument(file);
+            const entries = parseLogFile(document.getText());
+            
+            this._state.logFiles.push({
+                path: file.fsPath,
+                name: path.basename(file.fsPath),
+                entries: entries,
+                isExpanded: false
+            });
+        }
+
+        this._updateWebview();
+    }
 
     resolveWebviewView(
         webviewView: vscode.WebviewView,
         context: vscode.WebviewViewResolveContext,
         _token: vscode.CancellationToken,
     ) {
+        this._view = webviewView;
+
         webviewView.webview.options = {
             enableScripts: true,
             localResourceRoots: [this.extensionUri]
         };
 
-        webviewView.webview.html = this.getHtmlForWebview(webviewView.webview);
+        this._updateWebview();
 
         webviewView.webview.onDidReceiveMessage(
             async (message) => {
-                switch (message.type) {
-                    case 'selectFolder':
-                        const folderUri = await vscode.window.showOpenDialog({
-                            canSelectFiles: false,
-                            canSelectFolders: true,
-                            canSelectMany: false,
-                            title: 'Select Log Folder'
-                        });
-                        
-                        if (folderUri && folderUri[0]) {
-                            const logFiles = await vscode.workspace.findFiles(
-                                new vscode.RelativePattern(folderUri[0], '**/*.log')
-                            );
-                            
-                            webviewView.webview.postMessage({
-                                type: 'folderSelected',
-                                folder: folderUri[0].fsPath,
-                                logFiles: logFiles.map(file => ({
-                                    path: file.fsPath,
-                                    name: path.basename(file.fsPath)
-                                }))
-                            });
+                switch (message.command) {
+                    case 'openLogFile':
+                        if (message.path) {
+                            const file = this._state.logFiles.find(f => f.path === message.path);
+                            if (file) {
+                                // Use the existing LogViewerPanel to show the log file
+                                const document = await vscode.workspace.openTextDocument(vscode.Uri.file(file.path));
+                                vscode.commands.executeCommand('log-whisperer.viewLog', document.uri);
+                            }
                         }
                         break;
-                    case 'openLog':
-                        if (message.path) {
-                            const uri = vscode.Uri.file(message.path);
-                            const document = await vscode.workspace.openTextDocument(uri);
-                            const logs = await vscode.commands.executeCommand('log-whisperer.parseLog', uri);
-                        }
+                    case 'refresh':
+                        await this.scanWorkspace();
                         break;
                 }
             }
         );
     }
 
-    private getHtmlForWebview(webview: vscode.Webview): string {
+    private calculateLogSummary(entries: LogEntry[]): LogSummary {
+        const summary: LogSummary = {
+            total: entries.length,
+            errors: 0,
+            warnings: 0,
+            info: 0,
+            other: 0
+        };
+
+        entries.forEach(entry => {
+            const level = entry.level.toLowerCase();
+            if (level.includes('error')) {
+                summary.errors++;
+            } else if (level.includes('warn')) {
+                summary.warnings++;
+            } else if (level.includes('info')) {
+                summary.info++;
+            } else {
+                summary.other++;
+            }
+        });
+
+        return summary;
+    }
+
+    private _updateWebview() {
+        if (!this._view) {
+            return;
+        }
+
+        this._view.webview.html = this._getHtmlForWebview(this._view.webview);
+    }
+
+    private _getHtmlForWebview(webview: vscode.Webview): string {
+        const getLogLevelColor = (level: string): string => {
+            switch (level.toLowerCase()) {
+                case 'error': return 'var(--vscode-errorForeground)';
+                case 'warning': return 'var(--vscode-warningForeground)';
+                case 'info': return 'var(--vscode-notificationsInfoIcon-foreground)';
+                default: return 'var(--vscode-foreground)';
+            }
+        };
+
         return `<!DOCTYPE html>
         <html lang="en">
         <head>
@@ -64,79 +127,119 @@ export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <style>
                 body {
-                    padding: 15px;
-                    color: var(--vscode-foreground);
+                    padding: 10px;
                     font-family: var(--vscode-font-family);
+                    color: var(--vscode-foreground);
                 }
-                button {
-                    width: 100%;
-                    padding: 8px;
-                    margin: 5px 0;
+                .log-file {
+                    margin: 10px 0;
+                    padding: 10px;
+                    background: var(--vscode-editor-background);
+                    border-radius: 4px;
+                    border: 1px solid var(--vscode-widget-border);
+                    cursor: pointer;
+                }
+                .log-file:hover {
+                    background: var(--vscode-list-hoverBackground);
+                }
+                .file-header {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    margin-bottom: 8px;
+                }
+                .file-name {
+                    font-weight: bold;
+                }
+                .stats {
+                    display: grid;
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 4px;
+                    font-size: 12px;
+                }
+                .stat-item {
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                }
+                .stat-count {
+                    font-weight: bold;
+                }
+                .toolbar {
+                    margin-bottom: 10px;
+                    display: flex;
+                    justify-content: flex-end;
+                }
+                .refresh-button {
                     background: var(--vscode-button-background);
                     color: var(--vscode-button-foreground);
                     border: none;
+                    padding: 4px 8px;
                     border-radius: 2px;
                     cursor: pointer;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 5px;
                 }
-                button:hover {
+                .refresh-button:hover {
                     background: var(--vscode-button-hoverBackground);
-                }
-                .log-list {
-                    margin-top: 10px;
-                }
-                .log-item {
-                    padding: 5px;
-                    margin: 2px 0;
-                    cursor: pointer;
-                    display: flex;
-                    align-items: center;
-                    gap: 5px;
-                }
-                .log-item:hover {
-                    background: var(--vscode-list-hoverBackground);
                 }
             </style>
         </head>
         <body>
-            <button id="selectFolder">
-                <span class="codicon codicon-folder"></span>
-                Select Log Folder
-            </button>
-            <div id="logList" class="log-list"></div>
-            
+            <div class="toolbar">
+                <button class="refresh-button" id="refreshButton">
+                    <span class="codicon codicon-refresh"></span>
+                    Refresh
+                </button>
+            </div>
+            <div id="logFiles">
+                ${this._state.logFiles.map(file => {
+                    const summary = this.calculateLogSummary(file.entries);
+                    return `
+                        <div class="log-file" data-path="${file.path}">
+                            <div class="file-header">
+                                <span class="file-name">${file.name}</span>
+                                <span class="total-count">${summary.total} entries</span>
+                            </div>
+                            <div class="stats">
+                                <div class="stat-item">
+                                    <span style="color: ${getLogLevelColor('error')}">⬤</span>
+                                    <span class="stat-count">${summary.errors}</span>
+                                    <span>Errors</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span style="color: ${getLogLevelColor('warning')}">⬤</span>
+                                    <span class="stat-count">${summary.warnings}</span>
+                                    <span>Warnings</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span style="color: ${getLogLevelColor('info')}">⬤</span>
+                                    <span class="stat-count">${summary.info}</span>
+                                    <span>Info</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span>⬤</span>
+                                    <span class="stat-count">${summary.other}</span>
+                                    <span>Other</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+
             <script>
                 const vscode = acquireVsCodeApi();
                 
-                document.getElementById('selectFolder').addEventListener('click', () => {
-                    vscode.postMessage({ type: 'selectFolder' });
+                document.getElementById('refreshButton').addEventListener('click', () => {
+                    vscode.postMessage({ command: 'refresh' });
                 });
 
-                window.addEventListener('message', event => {
-                    const message = event.data;
-                    switch (message.type) {
-                        case 'folderSelected':
-                            const logList = document.getElementById('logList');
-                            logList.innerHTML = message.logFiles.map(file => \`
-                                <div class="log-item" data-path="\${file.path}">
-                                    <span class="codicon codicon-file"></span>
-                                    \${file.name}
-                                </div>
-                            \`).join('');
-                            
-                            document.querySelectorAll('.log-item').forEach(item => {
-                                item.addEventListener('click', () => {
-                                    vscode.postMessage({
-                                        type: 'openLog',
-                                        path: item.dataset.path
-                                    });
-                                });
-                            });
-                            break;
-                    }
+                document.querySelectorAll('.log-file').forEach(file => {
+                    file.addEventListener('click', () => {
+                        vscode.postMessage({
+                            command: 'openLogFile',
+                            path: file.dataset.path
+                        });
+                    });
                 });
             </script>
         </body>

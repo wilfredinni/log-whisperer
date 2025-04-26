@@ -11,8 +11,8 @@ export function activate(context: vscode.ExtensionContext) {
         logExplorerProvider
     );
 
-    const handleLogFile = async (filePath: string) => {
-        const document = await vscode.workspace.openTextDocument(filePath);
+    const handleLogFile = async (fileUri: vscode.Uri) => {
+        const document = await vscode.workspace.openTextDocument(fileUri);
         const logs = parseLogFile(document.getText());
         
         if (!logs.length) {
@@ -20,29 +20,13 @@ export function activate(context: vscode.ExtensionContext) {
             return;
         }
 
-        new LogViewerPanel(context, logs, filePath);
-    };
-
-    const registerCommand = (commandId: string) => {
-        return vscode.commands.registerCommand(commandId, async () => {
-            const fileUri = await vscode.window.showOpenDialog({
-                canSelectMany: false,
-                filters: {
-                    'Log Files': ['log']
-                }
-            });
-
-            if (fileUri && fileUri[0]) {
-                await handleLogFile(fileUri[0].fsPath);
-            }
-        });
+        new LogViewerPanel(context, logs, fileUri.fsPath);
     };
 
     // Register commands
     context.subscriptions.push(
         sidebarView,
-        registerCommand('log-whisperer.viewLog'),
-        registerCommand('log-whisperer.parseLog')
+        vscode.commands.registerCommand('log-whisperer.viewLog', handleLogFile)
     );
 }
 
