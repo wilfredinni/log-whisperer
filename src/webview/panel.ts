@@ -177,8 +177,19 @@ export class LogViewerPanel {
         this.currentLogs.length + (this.isLoading ? "... (Loading)" : ""),
       byLevel: {} as Record<string, number>,
       byLogger: {} as Record<string, number>,
-      allLevels: [...new Set(this.allLogs.map((log) => log.level))],
-      allLoggers: [...new Set(this.allLogs.map((log) => log.logger))],
+      // Keep track of all unique levels and loggers from both current and all logs
+      allLevels: [
+        ...new Set([
+          ...this.allLogs.map((log) => log.level),
+          ...this.currentLogs.map((log) => log.level),
+        ]),
+      ],
+      allLoggers: [
+        ...new Set([
+          ...this.allLogs.map((log) => log.logger),
+          ...this.currentLogs.map((log) => log.logger),
+        ]),
+      ],
     };
 
     // Process stats in chunks to avoid blocking
@@ -194,7 +205,13 @@ export class LogViewerPanel {
   }
 
   private updateWebview() {
+    // If we're loading and have no logs yet, show default filter options
     const stats = this.calculateStats();
+    if (this.isLoading && this.allLogs.length === 0) {
+      stats.allLevels = ["ERROR", "WARNING", "INFO", "DEBUG"]; // Default options
+      stats.allLoggers = ["Application"]; // Default option
+    }
+
     this.panel.webview.html = getWebviewContent(
       this.currentLogs,
       stats,
