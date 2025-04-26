@@ -21,7 +21,6 @@ npm-debug.log*
 ._*
 
 # IDE specific files
-.vscode/
 .idea/
 *.swp
 *.swo
