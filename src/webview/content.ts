@@ -168,6 +168,40 @@ const BASE_STYLES = `
         margin-right: 6px;
         vertical-align: middle;
     }
+
+    /* Level badge styling */
+    .level-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0 6px;
+        border-radius: 3px;
+        font-size: 11px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        height: 18px;
+    }
+
+    .level-badge[data-level="error"] {
+        background-color: var(--vscode-errorForeground);
+        color: var(--vscode-editor-background);
+    }
+
+    .level-badge[data-level="warning"] {
+        background-color: var(--vscode-problemsWarningIcon-foreground);
+        color: var(--vscode-editor-background);
+    }
+
+    .level-badge[data-level="info"] {
+        background-color: var(--vscode-notificationsInfoIcon-foreground);
+        color: var(--vscode-editor-background);
+    }
+
+    .level-badge[data-level="debug"],
+    .level-badge[data-level="trace"] {
+        background-color: var(--vscode-textLink-foreground);
+        color: var(--vscode-editor-background);
+    }
 `;
 
 const FILTER_STYLES = `
@@ -277,7 +311,7 @@ function getLogLevelColor(level: string): string {
     case "error":
       return "var(--vscode-errorForeground)";
     case "warning":
-      return "var(--vscode-warningForeground)";
+      return "var(--vscode-problemsWarningIcon-foreground)";
     case "info":
       return "var(--vscode-notificationsInfoIcon-foreground)";
     default:
@@ -306,10 +340,9 @@ export function getWebviewContent(
                 <td class="col-actions">${gotoFileButton}</td>
                 <td class="col-timestamp">${log.timestamp}</td>
                 <td class="col-level">
-                    <span class="level-indicator" style="background: ${getLogLevelColor(
-                      log.level
-                    )}"></span>
-                    ${log.level}
+                    <span class="level-badge" data-level="${log.level.toLowerCase()}">${
+      log.level
+    }</span>
                 </td>
                 <td class="col-logger">${log.logger}</td>
                 <td class="col-message">${log.message}</td>
