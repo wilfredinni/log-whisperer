@@ -5,11 +5,11 @@ export interface LogEntry {
   message: string;
   raw: string;
   filePath?: string;
-  lineNumber: number;  // Track the actual line number in the file
+  lineNumber?: number; // Track the actual line number in the file
 }
 
 export interface LogStats {
-  totalEntries: number | string; // Can be string when showing progress
+  totalEntries: number | string;
   byLevel: Record<string, number>;
   byLogger: Record<string, number>;
   allLevels: string[];
@@ -17,15 +17,16 @@ export interface LogStats {
 }
 
 export interface LogFilters {
-  level: string;
-  logger: string;
+  level?: string;
+  logger?: string;
+  search?: string;
 }
 
 export interface LogFile {
   path: string;
   name: string;
   entries: LogEntry[];
-  isExpanded?: boolean;
+  isExpanded: boolean;
 }
 
 export interface LogExplorerState {
