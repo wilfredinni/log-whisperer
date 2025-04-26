@@ -230,18 +230,18 @@ export function getWebviewContent(
                 div.style.borderLeftColor = getLogLevelColor(log.level);
 
                 // Create entry components
+                const gotoFile = createGotoFileElement(log);
                 const timestamp = createTimestampElement(log);
                 const logger = createLoggerElement(log);
                 const level = createLevelElement(log);
                 const message = createMessageElement(log, index);
-                const gotoFile = createGotoFileElement(log);
 
-                // Assemble entry
+                // Assemble entry with gotoFile first
+                div.appendChild(gotoFile);
                 div.appendChild(timestamp);
                 div.appendChild(logger);
                 div.appendChild(level);
                 div.appendChild(message);
-                div.appendChild(gotoFile);
 
                 // Add event handlers
                 addEntryEventHandlers(div, log, index);
@@ -282,8 +282,8 @@ export function getWebviewContent(
             function createGotoFileElement(log) {
                 const gotoFile = document.createElement('span');
                 gotoFile.className = 'goto-file';
-                gotoFile.textContent = '👁️';
-                gotoFile.title = log.filePath ? 'Go to this log in file' : 'File path not available';
+                gotoFile.textContent = '🔗';
+                gotoFile.title = log.filePath ? 'Open file at line ' + log.lineNumber : 'File path not available';
 
                 if (log.filePath) {
                     gotoFile.addEventListener('click', (e) => {
@@ -330,11 +330,11 @@ export function getWebviewContent(
                     div.style.borderLeftColor = getLogLevelColor(log.level);
                     
                     div.innerHTML = \`
+                        \${log.filePath ? '<span class="goto-file" title="Open file at line ' + log.lineNumber + '">🔗</span>' : ''}
                         <span class="timestamp">[\${log.timestamp}]</span>
                         <span class="logger">\${log.logger}</span>
                         <span class="level" style="color: \${getLogLevelColor(log.level)}">\${log.level}</span>
                         <span class="message">\${log.message}</span>
-                        \${log.filePath ? '<span class="goto-file" title="Go to this log in file">👁️</span>' : ''}
                     \`;
                     
                     if (log.filePath) {
