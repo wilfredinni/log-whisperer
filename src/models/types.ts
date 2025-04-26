@@ -8,7 +8,7 @@ export interface LogEntry {
 }
 
 export interface LogStats {
-    totalEntries: number;
+    totalEntries: number | string;  // Can be string when showing progress
     byLevel: Record<string, number>;
     byLogger: Record<string, number>;
     allLevels: string[];
@@ -32,7 +32,16 @@ export interface LogExplorerState {
     logFiles: LogFile[];
 }
 
-export type WebviewMessageCommand = 'filterLogs' | 'clearFilters' | 'selectFolder' | 'expandLogFile' | 'collapseLogFile' | 'openLog' | 'openLogFile' | 'refresh';
+export type WebviewMessageCommand = 
+    | 'filterLogs' 
+    | 'clearFilters' 
+    | 'selectFolder' 
+    | 'expandLogFile' 
+    | 'collapseLogFile' 
+    | 'openLog' 
+    | 'openLogFile' 
+    | 'refresh'
+    | 'updateLogs';
 
 export interface WebviewMessage {
     command: WebviewMessageCommand;
@@ -40,4 +49,8 @@ export interface WebviewMessage {
     logger?: string;
     path?: string;
     type?: string;
+    logs?: LogEntry[];
+    stats?: LogStats;
+    filters?: LogFilters;
+    progress?: number;
 }
