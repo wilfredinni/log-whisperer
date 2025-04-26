@@ -140,121 +140,230 @@ export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <style>
                 body {
-                    padding: 10px;
+                    padding: 0;
+                    margin: 0;
                     font-family: var(--vscode-font-family);
                     color: var(--vscode-foreground);
+                    background: var(--vscode-sideBar-background);
                 }
-                .log-file {
-                    margin: 10px 0;
-                    padding: 10px;
-                    background: var(--vscode-editor-background);
-                    border-radius: 4px;
-                    border: 1px solid var(--vscode-widget-border);
-                    cursor: pointer;
-                }
-                .log-file:hover {
-                    background: var(--vscode-list-hoverBackground);
-                }
-                .file-header {
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    margin-bottom: 8px;
-                }
-                .file-name {
-                    font-weight: bold;
-                }
-                .stats {
-                    display: grid;
-                    grid-template-columns: repeat(2, 1fr);
-                    gap: 4px;
-                    font-size: 12px;
-                }
-                .stat-item {
-                    display: flex;
-                    align-items: center;
-                    gap: 4px;
-                }
-                .stat-count {
-                    font-weight: bold;
+                .container {
+                    padding: 0 12px;
                 }
                 .toolbar {
-                    margin-bottom: 10px;
+                    position: sticky;
+                    top: 0;
+                    z-index: 100;
+                    padding: 8px 12px;
+                    margin: 0 -12px 12px;
+                    background: var(--vscode-sideBar-background);
+                    border-bottom: 1px solid var(--vscode-sideBarSectionHeader-border);
                     display: flex;
-                    justify-content: flex-end;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+                .toolbar h3 {
+                    margin: 0;
+                    font-size: var(--vscode-font-size);
+                    font-weight: 600;
+                    color: var(--vscode-sideBarTitle-foreground);
+                    opacity: 0.9;
                 }
                 .refresh-button {
-                    background: var(--vscode-button-background);
-                    color: var(--vscode-button-foreground);
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                    background: var(--vscode-button-secondaryBackground);
+                    color: var(--vscode-button-secondaryForeground);
                     border: none;
                     padding: 4px 8px;
                     border-radius: 2px;
                     cursor: pointer;
+                    font-size: 11px;
+                    height: 24px;
                 }
                 .refresh-button:hover {
-                    background: var(--vscode-button-hoverBackground);
+                    background: var(--vscode-button-secondaryHoverBackground);
+                }
+                .log-files {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px;
+                }
+                .log-file {
+                    background: var(--vscode-list-inactiveSelectionBackground);
+                    border-radius: 4px;
+                    border: 1px solid var(--vscode-widget-border);
+                    transition: all 0.1s ease;
+                    overflow: hidden;
+                }
+                .log-file:hover {
+                    background: var(--vscode-list-hoverBackground);
+                    border-color: var(--vscode-focusBorder);
+                }
+                .file-header {
+                    padding: 8px 12px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    cursor: pointer;
+                    user-select: none;
+                }
+                .file-info {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+                .file-icon {
+                    opacity: 0.8;
+                    color: var(--vscode-icon-foreground);
+                }
+                .file-name {
+                    font-weight: 500;
+                    color: var(--vscode-editor-foreground);
+                }
+                .total-count {
+                    font-size: 11px;
+                    padding: 2px 6px;
+                    background: var(--vscode-badge-background);
+                    color: var(--vscode-badge-foreground);
+                    border-radius: 10px;
+                }
+                .stats {
+                    padding: 0 12px 8px;
+                    display: grid;
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 8px;
+                }
+                .stat-item {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    font-size: 11px;
+                    padding: 4px;
+                    border-radius: 3px;
+                    background: var(--vscode-textBlockQuote-background);
+                }
+                .stat-icon {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 16px;
+                    height: 16px;
+                }
+                .stat-count {
+                    font-weight: 600;
+                    color: var(--vscode-input-foreground);
+                }
+                .stat-label {
+                    color: var(--vscode-descriptionForeground);
+                }
+                .empty-state {
+                    padding: 24px 16px;
+                    text-align: center;
+                    color: var(--vscode-descriptionForeground);
+                    font-size: 12px;
                 }
             </style>
         </head>
         <body>
             <div class="toolbar">
+                <h3>Log Files</h3>
                 <button class="refresh-button" id="refreshButton">
-                    <span class="codicon codicon-refresh"></span>
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                        <path d="M13.666 3.667l-1.334-1.334v2H10.25l-.583.583C8.75 4.083 7.583 3.667 6.333 3.667c-2.917 0-5.25 2.333-5.25 5.25s2.333 5.25 5.25 5.25 5.25-2.333 5.25-5.25h-1.75c0 1.917-1.583 3.5-3.5 3.5s-3.5-1.583-3.5-3.5 1.583-3.5 3.5-3.5c.917 0 1.75.333 2.333.917l-1.75 1.75h4.667v-4.667z" fill="currentColor"/>
+                    </svg>
                     Refresh
                 </button>
             </div>
-            <div id="logFiles">
-                ${this._state.logFiles
-                  .map((file) => {
-                    const summary = this.calculateLogSummary(file.entries);
-                    return `
-                        <div class="log-file" data-path="${file.path}">
-                            <div class="file-header">
-                                <span class="file-name">${file.name}</span>
-                                <span class="total-count">${
-                                  summary.total
-                                } entries</span>
-                            </div>
-                            <div class="stats">
-                                <div class="stat-item">
-                                    <span style="color: ${getLogLevelColor(
-                                      "error"
-                                    )}">⬤</span>
-                                    <span class="stat-count">${
-                                      summary.errors
-                                    }</span>
-                                    <span>Errors</span>
-                                </div>
-                                <div class="stat-item">
-                                    <span style="color: ${getLogLevelColor(
-                                      "warning"
-                                    )}">⬤</span>
-                                    <span class="stat-count">${
-                                      summary.warnings
-                                    }</span>
-                                    <span>Warnings</span>
-                                </div>
-                                <div class="stat-item">
-                                    <span style="color: ${getLogLevelColor(
-                                      "info"
-                                    )}">⬤</span>
-                                    <span class="stat-count">${
-                                      summary.info
-                                    }</span>
-                                    <span>Info</span>
-                                </div>
-                                <div class="stat-item">
-                                    <span>⬤</span>
-                                    <span class="stat-count">${
-                                      summary.other
-                                    }</span>
-                                    <span>Other</span>
-                                </div>
-                            </div>
+            <div class="container">
+                <div class="log-files">
+                    ${
+                      this._state.logFiles.length === 0
+                        ? `
+                        <div class="empty-state">
+                            No log files found in the workspace.<br>
+                            Add .log files and click refresh to scan.
                         </div>
-                    `;
-                  })
-                  .join("")}
+                    `
+                        : ""
+                    }
+                    ${this._state.logFiles
+                      .map((file) => {
+                        const summary = this.calculateLogSummary(file.entries);
+                        return `
+                            <div class="log-file" data-path="${file.path}">
+                                <div class="file-header">
+                                    <div class="file-info">
+                                        <span class="file-icon">
+                                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                                <path d="M13.85 4.44l-3.28-3.3-.35-.14H2.5l-.5.5v13l.5.5h11l.5-.5V4.8l-.15-.36zM13 13.5H3v-12h6.5l3.5 3.5v8.5z" fill="currentColor"/>
+                                            </svg>
+                                        </span>
+                                        <span class="file-name">${
+                                          file.name
+                                        }</span>
+                                    </div>
+                                    <span class="total-count">${
+                                      summary.total
+                                    }</span>
+                                </div>
+                                <div class="stats">
+                                    <div class="stat-item">
+                                        <span class="stat-icon" style="color: ${getLogLevelColor(
+                                          "error"
+                                        )}">
+                                            <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                                                <circle cx="8" cy="8" r="4" fill="currentColor"/>
+                                            </svg>
+                                        </span>
+                                        <span class="stat-count">${
+                                          summary.errors
+                                        }</span>
+                                        <span class="stat-label">Errors</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-icon" style="color: ${getLogLevelColor(
+                                          "warning"
+                                        )}">
+                                            <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                                                <circle cx="8" cy="8" r="4" fill="currentColor"/>
+                                            </svg>
+                                        </span>
+                                        <span class="stat-count">${
+                                          summary.warnings
+                                        }</span>
+                                        <span class="stat-label">Warnings</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-icon" style="color: ${getLogLevelColor(
+                                          "info"
+                                        )}">
+                                            <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                                                <circle cx="8" cy="8" r="4" fill="currentColor"/>
+                                            </svg>
+                                        </span>
+                                        <span class="stat-count">${
+                                          summary.info
+                                        }</span>
+                                        <span class="stat-label">Info</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-icon">
+                                            <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                                                <circle cx="8" cy="8" r="4" fill="currentColor"/>
+                                            </svg>
+                                        </span>
+                                        <span class="stat-count">${
+                                          summary.other
+                                        }</span>
+                                        <span class="stat-label">Other</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                      })
+                      .join("")}
+                </div>
             </div>
 
             <script>
