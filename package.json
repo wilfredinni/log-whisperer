@@ -1,7 +1,7 @@
 {
   "name": "log-whisperer",
   "displayName": "log-whisperer",
-  "description": "",
+  "description": "A VS Code extension for viewing log files in a structured way",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.99.0"
@@ -9,15 +9,41 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "icon": "media/icon.png",
+  "activationEvents": [
+
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
         "command": "log-whisperer.helloWorld",
         "title": "Hello World"
+      },
+      {
+        "command": "log-whisperer.parseLog",
+        "title": "Parse Log File",
+        "category": "Log Whisperer",
+        "icon": {
+          "light": "media/icon-light.png",
+          "dark": "media/icon-dark.png"
+        }
+      },
+      {
+        "command": "log-whisperer.viewLog",
+        "title": "View Log File",
+        "category": "Log Whisperer"
       }
-    ]
+    ],
+    "views": {
+      "explorer": [
+        {
+          "id": "logWhispererView",
+          "name": "Log Whisperer",
+          "icon": "media/icon.png"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "pnpm run package",
