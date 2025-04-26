@@ -8,6 +8,7 @@ export interface ParseProgress {
 }
 
 const CHUNK_SIZE = 32 * 1024; // 32KB chunks
+const LOG_PATTERN = /^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d{3})\s+([\w.]+)\s+(\w+)\s+(.+)$/;
 
 export async function* parseLogFileStream(
   uri: vscode.Uri
@@ -20,6 +21,9 @@ export async function* parseLogFileStream(
   const entries: LogEntry[] = [];
   const filePath = uri.fsPath;
   let lineNumber = 0;
+
+  // Track current entry for multiline appending
+  let currentEntry: LogEntry | null = null;
 
   for (let i = 0; i < fileContent.length; i += CHUNK_SIZE) {
     const chunk = fileContent.slice(i, i + CHUNK_SIZE);
@@ -35,12 +39,11 @@ export async function* parseLogFileStream(
         continue;
       }
 
-      const match = line.match(
-        /^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d{3})\s+([\w.]+)\s+(\w+)\s+(.+)$/
-      );
+      const match = line.match(LOG_PATTERN);
       if (match) {
+        // This is a new log entry
         const [, timestamp, logger, level, message] = match;
-        entries.push({
+        currentEntry = {
           timestamp,
           logger,
           level,
@@ -48,7 +51,12 @@ export async function* parseLogFileStream(
           raw: line,
           filePath,
           lineNumber
-        });
+        };
+        entries.push(currentEntry);
+      } else if (currentEntry) {
+        // This is a continuation line of the current entry
+        // Append to the raw content and maintain the original message
+        currentEntry.raw += "\n" + line;
       }
     }
 
@@ -63,9 +71,7 @@ export async function* parseLogFileStream(
   // Process any remaining content in the buffer
   if (buffer) {
     lineNumber++;
-    const match = buffer.match(
-      /^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d{3})\s+([\w.]+)\s+(\w+)\s+(.+)$/
-    );
+    const match = buffer.match(LOG_PATTERN);
     if (match) {
       const [, timestamp, logger, level, message] = match;
       entries.push({
@@ -77,6 +83,9 @@ export async function* parseLogFileStream(
         filePath,
         lineNumber
       });
+    } else if (currentEntry) {
+      // Append remaining buffer to the current entry if it's not a new log
+      currentEntry.raw += "\n" + buffer;
     }
   }
 

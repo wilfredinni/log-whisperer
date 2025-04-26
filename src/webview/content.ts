@@ -184,25 +184,75 @@ export function getWebviewContent(
             const ROW_HEIGHT = 40;
             const BUFFER_SIZE = 50;
             let logs = ${JSON.stringify(logs)};
+            // Track expanded entries and their heights
+            const expandedEntries = new Map();
 
             const virtualScroller = document.getElementById('virtualScroller');
             const logEntriesContainer = document.getElementById('logEntries');
 
+            function getEntryTop(index) {
+                // Calculate position taking into account expanded entries before this one
+                let top = index * ROW_HEIGHT;
+                
+                for (const [expandedIdx, height] of expandedEntries.entries()) {
+                    if (expandedIdx < index) {
+                        top += (height - ROW_HEIGHT);
+                    }
+                }
+                return top;
+            }
+
             function renderVisibleLogs() {
+                // Calculate the full height considering expanded entries
+                let totalHeight = logs.length * ROW_HEIGHT;
+                for (const [_, height] of expandedEntries.entries()) {
+                    totalHeight += (height - ROW_HEIGHT);
+                }
+                logEntriesContainer.style.height = \`\${totalHeight}px\`;
+
+                // Determine visible range based on scroll position
                 const scrollTop = virtualScroller.scrollTop;
                 const containerHeight = virtualScroller.clientHeight;
-
-                const startIndex = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - BUFFER_SIZE);
-                const endIndex = Math.min(logs.length, Math.ceil((scrollTop + containerHeight) / ROW_HEIGHT) + BUFFER_SIZE);
-
-                logEntriesContainer.style.height = \`\${logs.length * ROW_HEIGHT}px\`;
+                
+                // Find the visible range, taking expanded entries into account
+                let startIdx = 0;
+                let currentHeight = 0;
+                
+                // Find approximate start index based on scroll position
+                for (let i = 0; i < logs.length; i++) {
+                    const entryHeight = expandedEntries.has(i) ? expandedEntries.get(i) : ROW_HEIGHT;
+                    if (currentHeight + entryHeight > scrollTop - ROW_HEIGHT * BUFFER_SIZE) {
+                        startIdx = i;
+                        break;
+                    }
+                    currentHeight += entryHeight;
+                }
+                
+                // Find end index (adding buffer)
+                let endIdx = startIdx;
+                let visibleHeight = 0;
+                while (endIdx < logs.length && visibleHeight < containerHeight + ROW_HEIGHT * BUFFER_SIZE * 2) {
+                    const entryHeight = expandedEntries.has(endIdx) ? expandedEntries.get(endIdx) : ROW_HEIGHT;
+                    visibleHeight += entryHeight;
+                    endIdx++;
+                }
 
                 const fragment = document.createDocumentFragment();
-                for (let i = startIndex; i < endIndex; i++) {
+                for (let i = startIdx; i < endIdx; i++) {
                     const log = logs[i];
                     const div = document.createElement('div');
                     div.className = 'log-entry';
-                    div.style.top = \`\${i * ROW_HEIGHT}px\`;
+                    
+                    // Position based on expanded entries
+                    const top = getEntryTop(i);
+                    div.style.top = \`\${top}px\`;
+                    
+                    // Set height if expanded
+                    if (expandedEntries.has(i)) {
+                        div.classList.add('expanded');
+                        div.style.height = \`\${expandedEntries.get(i)}px\`;
+                    }
+                    
                     div.style.borderLeftColor = getLogLevelColor(log.level);
                     div.dataset.index = i;
 
@@ -225,7 +275,13 @@ export function getWebviewContent(
                     if (log.raw && log.raw !== log.message) {
                         message.classList.add('has-multiline');
                     }
-                    message.textContent = log.message;
+                    
+                    // Show full content if expanded
+                    if (expandedEntries.has(i)) {
+                        message.textContent = log.raw;
+                    } else {
+                        message.textContent = log.message;
+                    }
 
                     const gotoFile = document.createElement('span');
                     gotoFile.className = 'goto-file';
@@ -234,7 +290,8 @@ export function getWebviewContent(
                     if (!log.filePath) {
                         gotoFile.dataset.disabled = 'true';
                     } else {
-                        gotoFile.addEventListener('click', () => {
+                        gotoFile.addEventListener('click', (e) => {
+                            e.stopPropagation();
                             vscode.postMessage({
                                 command: 'openLogFile',
                                 path: log.filePath,
@@ -263,25 +320,32 @@ export function getWebviewContent(
 
                     div.addEventListener('click', () => {
                         if (log.raw && log.raw !== log.message) {
+                            const isExpanding = !div.classList.contains('expanded');
                             div.classList.toggle('expanded');
-                            message.textContent = div.classList.contains('expanded') ? log.raw : log.message;
+                            
+                            // Update message content
+                            message.textContent = isExpanding ? log.raw : log.message;
 
-                            // Adjust height when expanded
+                            // Calculate new height
                             const lines = log.raw.split('\\n').length;
-                            const newHeight = div.classList.contains('expanded') ?
-                                Math.max(40, lines * 20) : 40; // 20px per line
-
-                            div.style.height = \`\${newHeight}px\`;
-
-                            // Update positions of elements below
-                            const currentIndex = parseInt(div.dataset.index);
-                            const heightDiff = newHeight - ROW_HEIGHT;
-
-                            const followingElements = document.querySelectorAll(\`.log-entry[data-index="\${currentIndex + 1}"]\`);
-                            followingElements.forEach(el => {
-                                const currentTop = parseInt(el.style.top);
-                                el.style.top = \`\${currentTop + heightDiff}px\`;
-                            });
+                            const newHeight = isExpanding ? Math.max(40, lines * 20) : 40; // 20px per line
+                            
+                            // Track expansion state
+                            const index = parseInt(div.dataset.index);
+                            if (isExpanding) {
+                                expandedEntries.set(index, newHeight);
+                            } else {
+                                expandedEntries.delete(index);
+                            }
+                            
+                            // Update the UI
+                            renderVisibleLogs();
+                            
+                            // Ensure the clicked entry remains visible
+                            const entryTop = getEntryTop(index);
+                            if (entryTop < scrollTop) {
+                                virtualScroller.scrollTop = entryTop;
+                            }
                         }
                     });
 
@@ -318,6 +382,8 @@ export function getWebviewContent(
                     command: 'filterLogs',
                     level: e.target.value
                 });
+                // Clear expansions when filtering
+                expandedEntries.clear();
             });
 
             document.getElementById('loggerFilter').addEventListener('change', (e) => {
@@ -325,12 +391,16 @@ export function getWebviewContent(
                     command: 'filterLogs',
                     logger: e.target.value
                 });
+                // Clear expansions when filtering
+                expandedEntries.clear();
             });
 
             document.getElementById('clearFilters').addEventListener('click', () => {
                 vscode.postMessage({
                     command: 'clearFilters'
                 });
+                // Clear expansions when clearing filters
+                expandedEntries.clear();
             });
 
             // Handle messages from extension
@@ -339,6 +409,8 @@ export function getWebviewContent(
                 switch (message.command) {
                     case 'updateLogs':
                         logs = message.logs;
+                        // Clear expansions on log updates
+                        expandedEntries.clear();
                         renderVisibleLogs();
                         break;
                 }
