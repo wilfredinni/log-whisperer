@@ -324,31 +324,6 @@ export function getWebviewContent(
   stats: LogStats,
   filters: LogFilters
 ): string {
-  const renderLogRow = (log: LogEntry, index: number) => {
-    const gotoFileButton = log.filePath
-      ? `<span class="goto-file" title="Open file at line ${log.lineNumber}" style="cursor: pointer; opacity: 0.6;" onclick="gotoFile('${log.filePath}', ${log.lineNumber})">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M12 8.66667V12.6667C12 13.0203 11.8595 13.3594 11.6095 13.6095C11.3594 13.8595 11.0203 14 10.6667 14H3.33333C2.97971 14 2.64057 13.8595 2.39052 13.6095C2.14048 13.3594 2 13.0203 2 12.6667V5.33333C2 4.97971 2.14048 4.64057 2.39052 4.39052C2.64057 4.14048 2.97971 4 3.33333 4H7.33333" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M10 2H14V6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M14 2L6 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-            </span>`
-      : "";
-
-    return `
-            <tr data-index="${index}">
-                <td class="col-actions">${gotoFileButton}</td>
-                <td class="col-timestamp">${log.timestamp}</td>
-                <td class="col-level">
-                    <span class="level-badge" data-level="${log.level.toLowerCase()}">${
-      log.level
-    }</span>
-                </td>
-                <td class="col-logger">${log.logger}</td>
-                <td class="col-message">${log.message}</td>
-            </tr>`;
-  };
-
   return `<!DOCTYPE html>
     <html>
     <head>
@@ -378,9 +353,6 @@ export function getWebviewContent(
                         </tr>
                     </thead>
                     <tbody id="logTableBody">
-                        ${logs
-                          .map((log, index) => renderLogRow(log, index))
-                          .join("")}
                     </tbody>
                 </table>
             </div>
@@ -390,6 +362,47 @@ export function getWebviewContent(
             const vscode = acquireVsCodeApi();
             let logs = ${JSON.stringify(logs)};
             
+            function renderLogRow(log, index) {
+                const gotoFileButton = log.filePath 
+                    ? \`<span class="goto-file" title="Open file at line \${log.lineNumber}" style="cursor: pointer; opacity: 0.6;" onclick="gotoFile('\${log.filePath}', \${log.lineNumber})">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M12 8.66667V12.6667C12 13.0203 11.8595 13.3594 11.6095 13.6095C11.3594 13.8595 11.0203 14 10.6667 14H3.33333C2.97971 14 2.64057 13.8595 2.39052 13.6095C2.14048 13.3594 2 13.0203 2 12.6667V5.33333C2 4.97971 2.14048 4.64057 2.39052 4.39052C2.64057 4.14048 2.97971 4 3.33333 4H7.33333" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M10 2H14V6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M14 2L6 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </span>\`
+                    : "";
+
+                return \`
+                    <tr data-index="\${index}">
+                        <td class="col-actions">\${gotoFileButton}</td>
+                        <td class="col-timestamp">\${log.timestamp}</td>
+                        <td class="col-level">
+                            <span class="level-badge" data-level="\${log.level.toLowerCase()}">\${log.level}</span>
+                        </td>
+                        <td class="col-logger">\${log.logger}</td>
+                        <td class="col-message">\${log.message}</td>
+                    </tr>\`;
+            }
+
+            function updateTable(logs, filters) {
+                const tableBody = document.getElementById('logTableBody');
+                if (tableBody) {
+                    tableBody.innerHTML = logs.map((log, index) => renderLogRow(log, index)).join('');
+                }
+
+                // Update filter selections
+                const levelFilter = document.getElementById('levelFilter');
+                const loggerFilter = document.getElementById('loggerFilter');
+                
+                if (levelFilter && filters.level !== undefined) {
+                    levelFilter.value = filters.level;
+                }
+                if (loggerFilter && filters.logger !== undefined) {
+                    loggerFilter.value = filters.logger;
+                }
+            }
+
             function gotoFile(path, line) {
                 vscode.postMessage({
                     command: 'openLogFile',
@@ -397,6 +410,9 @@ export function getWebviewContent(
                     line: line
                 });
             }
+
+            // Initial render
+            updateTable(logs, ${JSON.stringify(filters)});
 
             document.getElementById('levelFilter')?.addEventListener('change', (e) => {
                 vscode.postMessage({
@@ -420,10 +436,7 @@ export function getWebviewContent(
                 const message = event.data;
                 if (message.command === 'updateLogs') {
                     logs = message.logs;
-                    const tableBody = document.getElementById('logTableBody');
-                    if (tableBody) {
-                        tableBody.innerHTML = logs.map((log: LogEntry, i: number) => renderLogRow(log, i)).join('');
-                    }
+                    updateTable(logs, message.filters || {});
                 }
             });
         </script>

@@ -117,7 +117,8 @@ export class LogViewerPanel {
         const chunk = this.allLogs.slice(i, i + this.CHUNK_SIZE);
         const filteredChunk = chunk.filter((log) => {
           const levelMatch =
-            !this.filters.level || log.level === this.filters.level;
+            !this.filters.level ||
+            log.level.toLowerCase() === this.filters.level.toLowerCase();
           const loggerMatch =
             !this.filters.logger || log.logger === this.filters.logger;
           return levelMatch && loggerMatch;
@@ -139,14 +140,21 @@ export class LogViewerPanel {
       // For progressive updates, apply filters immediately
       this.currentLogs = this.allLogs.filter((log) => {
         const levelMatch =
-          !this.filters.level || log.level === this.filters.level;
+          !this.filters.level ||
+          log.level.toLowerCase() === this.filters.level.toLowerCase();
         const loggerMatch =
           !this.filters.logger || log.logger === this.filters.logger;
         return levelMatch && loggerMatch;
       });
     }
 
-    this.updateWebview();
+    const stats = this.calculateStats();
+    this.panel.webview.postMessage({
+      command: "updateLogs",
+      logs: this.currentLogs,
+      stats,
+      filters: this.filters,
+    });
   }
 
   private updateWebviewWithProgress(progress: number) {
