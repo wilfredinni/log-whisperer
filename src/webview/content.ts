@@ -41,6 +41,14 @@ const BASE_STYLES = `
         letter-spacing: 0.04em;
     }
 
+    .stats-total {
+        margin: 0 0 6px 0;
+        font-size: 11px;
+        font-weight: 400;
+        color: var(--vscode-sideBarTitle-foreground);
+        letter-spacing: 0.04em;
+    }
+
     .filters {
         padding: 6px 12px;
         display: flex;
@@ -255,6 +263,7 @@ function generateStatsHTML(stats: LogStats): string {
   return `
         <div class="stats">
             <h3>Log Statistics</h3>
+            <p class="stats-total">Showing ${stats.totalEntries} logs</p>
             <div class="stats-levels">
                 ${Object.entries(stats.totalByLevel)
                   .map(
@@ -327,6 +336,7 @@ export function getWebviewContent(
         return \`
             <div class="stats">
                 <h3>Log Statistics</h3>
+                <p class="stats-total">Showing \${stats.totalEntries} logs</p>
                 <div class="stats-levels">
                     \${Object.entries(stats.totalByLevel)
                         .map(([level, count]) => 
