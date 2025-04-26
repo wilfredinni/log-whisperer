@@ -1,126 +1,133 @@
-import * as vscode from 'vscode';
-import * as path from 'path';
-import { LogEntry, LogFile, LogExplorerState } from '../models/types';
-import { parseLogFile } from '../utils/parser';
+import * as vscode from "vscode";
+import * as path from "path";
+import { LogEntry, LogFile, LogExplorerState } from "../models/types";
+import { parseLogFile } from "../utils/parser";
 
 interface LogSummary {
-    total: number;
-    errors: number;
-    warnings: number;
-    info: number;
-    other: number;
+  total: number;
+  errors: number;
+  warnings: number;
+  info: number;
+  other: number;
 }
 
 export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
-    private _view?: vscode.WebviewView;
-    private _state: LogExplorerState = { logFiles: [] };
+  private _view?: vscode.WebviewView;
+  private _state: LogExplorerState = { logFiles: [] };
 
-    constructor(
-        private readonly extensionUri: vscode.Uri,
-    ) {
-        this.scanWorkspace();
+  constructor(private readonly extensionUri: vscode.Uri) {
+    this.scanWorkspace();
+  }
+
+  private async scanWorkspace() {
+    // Find all log files in the workspace
+    const logFiles = await vscode.workspace.findFiles("**/*.log");
+
+    this._state.logFiles = [];
+
+    for (const file of logFiles) {
+      const document = await vscode.workspace.openTextDocument(file);
+      const entries = parseLogFile(document.getText());
+
+      this._state.logFiles.push({
+        path: file.fsPath,
+        name: path.basename(file.fsPath),
+        entries: entries,
+        isExpanded: false,
+      });
     }
 
-    private async scanWorkspace() {
-        // Find all log files in the workspace
-        const logFiles = await vscode.workspace.findFiles('**/*.log');
-        
-        this._state.logFiles = [];
-        
-        for (const file of logFiles) {
-            const document = await vscode.workspace.openTextDocument(file);
-            const entries = parseLogFile(document.getText());
-            
-            this._state.logFiles.push({
-                path: file.fsPath,
-                name: path.basename(file.fsPath),
-                entries: entries,
-                isExpanded: false
-            });
-        }
+    this._updateWebview();
+  }
 
-        this._updateWebview();
-    }
+  resolveWebviewView(
+    webviewView: vscode.WebviewView,
+    context: vscode.WebviewViewResolveContext,
+    _token: vscode.CancellationToken
+  ) {
+    this._view = webviewView;
 
-    resolveWebviewView(
-        webviewView: vscode.WebviewView,
-        context: vscode.WebviewViewResolveContext,
-        _token: vscode.CancellationToken,
-    ) {
-        this._view = webviewView;
+    webviewView.webview.options = {
+      enableScripts: true,
+      localResourceRoots: [this.extensionUri],
+    };
 
-        webviewView.webview.options = {
-            enableScripts: true,
-            localResourceRoots: [this.extensionUri]
-        };
+    this._updateWebview();
 
-        this._updateWebview();
-
-        webviewView.webview.onDidReceiveMessage(
-            async (message) => {
-                switch (message.command) {
-                    case 'openLogFile':
-                        if (message.path) {
-                            const file = this._state.logFiles.find(f => f.path === message.path);
-                            if (file) {
-                                // Use the existing LogViewerPanel to show the log file
-                                const document = await vscode.workspace.openTextDocument(vscode.Uri.file(file.path));
-                                vscode.commands.executeCommand('log-whisperer.viewLog', document.uri);
-                            }
-                        }
-                        break;
-                    case 'refresh':
-                        await this.scanWorkspace();
-                        break;
-                }
+    webviewView.webview.onDidReceiveMessage(async (message) => {
+      switch (message.command) {
+        case "openLogFile":
+          if (message.path) {
+            const file = this._state.logFiles.find(
+              (f) => f.path === message.path
+            );
+            if (file) {
+              // Use the existing LogViewerPanel to show the log file
+              const document = await vscode.workspace.openTextDocument(
+                vscode.Uri.file(file.path)
+              );
+              vscode.commands.executeCommand(
+                "log-whisperer.viewLog",
+                document.uri
+              );
             }
-        );
+          }
+          break;
+        case "refresh":
+          await this.scanWorkspace();
+          break;
+      }
+    });
+  }
+
+  private calculateLogSummary(entries: LogEntry[]): LogSummary {
+    const summary: LogSummary = {
+      total: entries.length,
+      errors: 0,
+      warnings: 0,
+      info: 0,
+      other: 0,
+    };
+
+    entries.forEach((entry) => {
+      const level = entry.level.toLowerCase();
+      if (level.includes("error")) {
+        summary.errors++;
+      } else if (level.includes("warn")) {
+        summary.warnings++;
+      } else if (level.includes("info")) {
+        summary.info++;
+      } else {
+        summary.other++;
+      }
+    });
+
+    return summary;
+  }
+
+  private _updateWebview() {
+    if (!this._view) {
+      return;
     }
 
-    private calculateLogSummary(entries: LogEntry[]): LogSummary {
-        const summary: LogSummary = {
-            total: entries.length,
-            errors: 0,
-            warnings: 0,
-            info: 0,
-            other: 0
-        };
+    this._view.webview.html = this._getHtmlForWebview(this._view.webview);
+  }
 
-        entries.forEach(entry => {
-            const level = entry.level.toLowerCase();
-            if (level.includes('error')) {
-                summary.errors++;
-            } else if (level.includes('warn')) {
-                summary.warnings++;
-            } else if (level.includes('info')) {
-                summary.info++;
-            } else {
-                summary.other++;
-            }
-        });
+  private _getHtmlForWebview(webview: vscode.Webview): string {
+    const getLogLevelColor = (level: string): string => {
+      switch (level.toLowerCase()) {
+        case "error":
+          return "var(--vscode-errorForeground)";
+        case "warning":
+          return "var(--vscode-warningForeground)";
+        case "info":
+          return "var(--vscode-notificationsInfoIcon-foreground)";
+        default:
+          return "var(--vscode-foreground)";
+      }
+    };
 
-        return summary;
-    }
-
-    private _updateWebview() {
-        if (!this._view) {
-            return;
-        }
-
-        this._view.webview.html = this._getHtmlForWebview(this._view.webview);
-    }
-
-    private _getHtmlForWebview(webview: vscode.Webview): string {
-        const getLogLevelColor = (level: string): string => {
-            switch (level.toLowerCase()) {
-                case 'error': return 'var(--vscode-errorForeground)';
-                case 'warning': return 'var(--vscode-warningForeground)';
-                case 'info': return 'var(--vscode-notificationsInfoIcon-foreground)';
-                default: return 'var(--vscode-foreground)';
-            }
-        };
-
-        return `<!DOCTYPE html>
+    return `<!DOCTYPE html>
         <html lang="en">
         <head>
             <meta charset="UTF-8">
@@ -191,39 +198,57 @@ export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
                 </button>
             </div>
             <div id="logFiles">
-                ${this._state.logFiles.map(file => {
+                ${this._state.logFiles
+                  .map((file) => {
                     const summary = this.calculateLogSummary(file.entries);
                     return `
                         <div class="log-file" data-path="${file.path}">
                             <div class="file-header">
                                 <span class="file-name">${file.name}</span>
-                                <span class="total-count">${summary.total} entries</span>
+                                <span class="total-count">${
+                                  summary.total
+                                } entries</span>
                             </div>
                             <div class="stats">
                                 <div class="stat-item">
-                                    <span style="color: ${getLogLevelColor('error')}">⬤</span>
-                                    <span class="stat-count">${summary.errors}</span>
+                                    <span style="color: ${getLogLevelColor(
+                                      "error"
+                                    )}">⬤</span>
+                                    <span class="stat-count">${
+                                      summary.errors
+                                    }</span>
                                     <span>Errors</span>
                                 </div>
                                 <div class="stat-item">
-                                    <span style="color: ${getLogLevelColor('warning')}">⬤</span>
-                                    <span class="stat-count">${summary.warnings}</span>
+                                    <span style="color: ${getLogLevelColor(
+                                      "warning"
+                                    )}">⬤</span>
+                                    <span class="stat-count">${
+                                      summary.warnings
+                                    }</span>
                                     <span>Warnings</span>
                                 </div>
                                 <div class="stat-item">
-                                    <span style="color: ${getLogLevelColor('info')}">⬤</span>
-                                    <span class="stat-count">${summary.info}</span>
+                                    <span style="color: ${getLogLevelColor(
+                                      "info"
+                                    )}">⬤</span>
+                                    <span class="stat-count">${
+                                      summary.info
+                                    }</span>
                                     <span>Info</span>
                                 </div>
                                 <div class="stat-item">
                                     <span>⬤</span>
-                                    <span class="stat-count">${summary.other}</span>
+                                    <span class="stat-count">${
+                                      summary.other
+                                    }</span>
                                     <span>Other</span>
                                 </div>
                             </div>
                         </div>
                     `;
-                }).join('')}
+                  })
+                  .join("")}
             </div>
 
             <script>
@@ -244,5 +269,5 @@ export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
             </script>
         </body>
         </html>`;
-    }
+  }
 }

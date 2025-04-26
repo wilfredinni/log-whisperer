@@ -1,8 +1,12 @@
-import { LogEntry, LogStats, LogFilters } from '../models/types';
-import { getLogLevelColor } from '../utils/parser';
+import { LogEntry, LogStats, LogFilters } from "../models/types";
+import { getLogLevelColor } from "../utils/parser";
 
-export function getWebviewContent(logs: LogEntry[], stats: LogStats, filters: LogFilters): string {
-    return `<!DOCTYPE html>
+export function getWebviewContent(
+  logs: LogEntry[],
+  stats: LogStats,
+  filters: LogFilters
+): string {
+  return `<!DOCTYPE html>
     <html>
     <head>
         <style>
@@ -73,9 +77,9 @@ export function getWebviewContent(logs: LogEntry[], stats: LogStats, filters: Lo
             <h3>Log Statistics</h3>
             <p>Showing ${stats.totalEntries} entries</p>
             <h4>Distribution by Level:</h4>
-            ${Object.entries(stats.byLevel).map(([level, count]) => 
-                `<div>${level}: ${count}</div>`
-            ).join('')}
+            ${Object.entries(stats.byLevel)
+              .map(([level, count]) => `<div>${level}: ${count}</div>`)
+              .join("")}
         </div>
 
         <div class="filters">
@@ -83,32 +87,50 @@ export function getWebviewContent(logs: LogEntry[], stats: LogStats, filters: Lo
                 <label>Level:</label>
                 <select id="levelFilter">
                     <option value="">All</option>
-                    ${stats.allLevels.map((level: string) => 
-                        `<option value="${level}" ${filters.level === level ? 'selected' : ''}>${level}</option>`
-                    ).join('')}
+                    ${stats.allLevels
+                      .map(
+                        (level: string) =>
+                          `<option value="${level}" ${
+                            filters.level === level ? "selected" : ""
+                          }>${level}</option>`
+                      )
+                      .join("")}
                 </select>
             </div>
             <div class="filter-group">
                 <label>Logger:</label>
                 <select id="loggerFilter">
                     <option value="">All</option>
-                    ${stats.allLoggers.map((logger: string) => 
-                        `<option value="${logger}" ${filters.logger === logger ? 'selected' : ''}>${logger}</option>`
-                    ).join('')}
+                    ${stats.allLoggers
+                      .map(
+                        (logger: string) =>
+                          `<option value="${logger}" ${
+                            filters.logger === logger ? "selected" : ""
+                          }>${logger}</option>`
+                      )
+                      .join("")}
                 </select>
             </div>
             <button id="clearFilters">Clear Filters</button>
         </div>
 
         <div id="logEntries">
-            ${logs.map(log => `
-                <div class="log-entry" style="border-left: 3px solid ${getLogLevelColor(log.level)}">
+            ${logs
+              .map(
+                (log) => `
+                <div class="log-entry" style="border-left: 3px solid ${getLogLevelColor(
+                  log.level
+                )}">
                     <span class="timestamp">[${log.timestamp}]</span>
                     <span class="logger">${log.logger}</span>
-                    <span class="level" style="color: ${getLogLevelColor(log.level)}">${log.level}</span>
+                    <span class="level" style="color: ${getLogLevelColor(
+                      log.level
+                    )}">${log.level}</span>
                     <div class="message">${log.message}</div>
                 </div>
-            `).join('')}
+            `
+              )
+              .join("")}
         </div>
 
         <script>

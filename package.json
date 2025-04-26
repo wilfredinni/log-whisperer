@@ -10,12 +10,7 @@
     "Other"
   ],
   "icon": "media/icon.png",
-  "activationEvents": [
-    "onView:logWhispererView",
-    "onCommand:log-whisperer.selectLogFolder",
-    "onCommand:log-whisperer.parseLog",
-    "onCommand:log-whisperer.viewLog"
-  ],
+  "activationEvents": [],
   "main": "./dist/extension.js",
   "contributes": {
     "viewsContainers": {
@@ -30,6 +25,7 @@
     "views": {
       "log-whisperer-explorer": [
         {
+          "icon": "media/icon-light.png",
           "id": "logWhispererView",
           "name": "Log Explorer",
           "type": "webview"
