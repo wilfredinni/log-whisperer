@@ -12,6 +12,7 @@ export interface LogStats {
   totalEntries: number | string;
   byLevel: Record<string, number>;
   byLogger: Record<string, number>;
+  totalByLevel: Record<string, number>;
   allLevels: string[];
   allLoggers: string[];
 }

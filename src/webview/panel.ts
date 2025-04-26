@@ -192,6 +192,7 @@ export class LogViewerPanel {
         : `${this.currentLogs.length}`,
       byLevel: {} as Record<string, number>,
       byLogger: {} as Record<string, number>,
+      totalByLevel: {} as Record<string, number>,
       allLevels: [
         ...new Set([
           ...this.allLogs.map((log) => log.level),
@@ -207,7 +208,16 @@ export class LogViewerPanel {
     };
 
     if (!this.isLoading) {
-      // Process stats in chunks to avoid blocking
+      // Calculate total counts from all logs first
+      for (let i = 0; i < this.allLogs.length; i += this.CHUNK_SIZE) {
+        const chunk = this.allLogs.slice(i, i + this.CHUNK_SIZE);
+        chunk.forEach((log) => {
+          stats.totalByLevel[log.level] =
+            (stats.totalByLevel[log.level] || 0) + 1;
+        });
+      }
+
+      // Then calculate filtered counts
       for (let i = 0; i < this.currentLogs.length; i += this.CHUNK_SIZE) {
         const chunk = this.currentLogs.slice(i, i + this.CHUNK_SIZE);
         chunk.forEach((log) => {

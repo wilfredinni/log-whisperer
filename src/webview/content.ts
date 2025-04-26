@@ -255,9 +255,8 @@ function generateStatsHTML(stats: LogStats): string {
   return `
         <div class="stats">
             <h3>Log Statistics</h3>
-            <p>Showing ${stats.totalEntries} entries</p>
             <div class="stats-levels">
-                ${Object.entries(stats.byLevel)
+                ${Object.entries(stats.totalByLevel)
                   .map(
                     ([level, count]) =>
                       `<div><span class="level-indicator" style="background: ${getLogLevelColor(
@@ -328,9 +327,8 @@ export function getWebviewContent(
         return \`
             <div class="stats">
                 <h3>Log Statistics</h3>
-                <p>Showing \${stats.totalEntries} entries</p>
                 <div class="stats-levels">
-                    \${Object.entries(stats.byLevel)
+                    \${Object.entries(stats.totalByLevel)
                         .map(([level, count]) => 
                             \`<div><span class="level-indicator" style="background: \${getLogLevelColor(level)}"></span>\${level}: \${count}</div>\`)
                         .join('')}
