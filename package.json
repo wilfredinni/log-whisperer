@@ -11,11 +11,38 @@
   ],
   "icon": "media/icon.png",
   "activationEvents": [
-
+    "onView:logWhispererView",
+    "onCommand:log-whisperer.selectLogFolder",
+    "onCommand:log-whisperer.parseLog",
+    "onCommand:log-whisperer.viewLog"
   ],
   "main": "./dist/extension.js",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "log-whisperer-explorer",
+          "title": "Log Whisperer",
+          "icon": "media/icon-light.png"
+        }
+      ]
+    },
+    "views": {
+      "log-whisperer-explorer": [
+        {
+          "id": "logWhispererView",
+          "name": "Log Explorer",
+          "type": "webview"
+        }
+      ]
+    },
     "commands": [
+      {
+        "command": "log-whisperer.selectLogFolder",
+        "title": "Select Log Folder",
+        "category": "Log Whisperer",
+        "icon": "$(folder-opened)"
+      },
       {
         "command": "log-whisperer.helloWorld",
         "title": "Hello World"
@@ -34,16 +61,7 @@
         "title": "View Log File",
         "category": "Log Whisperer"
       }
-    ],
-    "views": {
-      "explorer": [
-        {
-          "id": "logWhispererView",
-          "name": "Log Whisperer",
-          "icon": "media/icon.png"
-        }
-      ]
-    }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "pnpm run package",
