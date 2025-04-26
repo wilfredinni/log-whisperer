@@ -93,13 +93,17 @@ const BASE_STYLES = `
         color: var(--vscode-descriptionForeground);
     }
 
+    input[type="text"], select, button {
+        height: 24px;
+        font-size: 11px;
+        border-radius: 2px;
+        min-width: 120px;
+    }
+
     input[type="text"], select {
         background: var(--vscode-input-background);
         color: var(--vscode-input-foreground);
         border: 1px solid transparent;
-        font-size: 11px;
-        height: 22px;
-        border-radius: 2px;
         padding: 0 6px;
     }
 
@@ -108,12 +112,11 @@ const BASE_STYLES = `
     }
 
     select {
-        min-width: 100px;
-        padding-right: 20px;
+        padding-right: 24px;
         appearance: none;
         background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3e%3cpath fill='%23C5C5C5' d='M7.976 10.072l4.357-4.357.62.618L8.284 11h-.618L3 6.333l.619-.618 4.357 4.357z'/%3e%3c/svg%3e");
         background-repeat: no-repeat;
-        background-position: right 4px center;
+        background-position: right 6px center;
     }
 
     input[type="text"]:focus, select:focus {
@@ -125,12 +128,13 @@ const BASE_STYLES = `
         background: none;
         border: none;
         color: var(--vscode-textLink-foreground);
-        font-size: 11px;
-        padding: 0;
+        padding: 0 12px;
         cursor: pointer;
-        display: flex;
+        display: inline-flex;
         align-items: center;
+        justify-content: center;
         gap: 4px;
+        min-width: auto;
     }
 
     button:hover {
@@ -297,55 +301,56 @@ const FILTER_STYLES = `
         align-items: center;
         gap: 8px;
     }
+
     .filter-group label {
         font-size: 11px;
         color: var(--vscode-descriptionForeground);
     }
-    .filter-group input[type="text"] {
+
+    input[type="text"], select, button {
+        height: 24px;
+        font-size: 11px;
+        border-radius: 2px;
+    }
+
+    input[type="text"], select {
         background: var(--vscode-input-background);
         color: var(--vscode-input-foreground);
-        border: 1px solid var(--vscode-input-border);
-        padding: 4px 8px;
-        font-size: 11px;
-        border-radius: 3px;
-        height: 24px;
-        min-width: 220px;
-    }
-    .filter-group input[type="text"]:focus {
-        outline: 1px solid var(--vscode-focusBorder);
-        outline-offset: -1px;
-    }
-    select {
-        background: var(--vscode-dropdown-background);
-        color: var(--vscode-dropdown-foreground);
         border: 1px solid var(--vscode-dropdown-border);
-        padding: 0 24px 0 8px;
-        font-size: 11px;
-        border-radius: 3px;
-        height: 24px;
+        padding: 0 8px;
+    }
+
+    input[type="text"] {
+        min-width: 200px;
+    }
+
+    select {
         min-width: 120px;
+        padding-right: 24px;
         cursor: pointer;
         appearance: none;
         background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3e%3cpath fill='%23C5C5C5' d='M7.976 10.072l4.357-4.357.62.618L8.284 11h-.618L3 6.333l.619-.618 4.357 4.357z'/%3e%3c/svg%3e");
         background-repeat: no-repeat;
         background-position: right 6px center;
     }
-    select:focus {
+
+    input[type="text"]:focus, select:focus {
         outline: 1px solid var(--vscode-focusBorder);
         outline-offset: -1px;
     }
+
     button {
         background: var(--vscode-button-secondaryBackground);
         color: var(--vscode-button-secondaryForeground);
         border: none;
         padding: 0 10px;
-        border-radius: 3px;
+        min-width: 80px;
         cursor: pointer;
-        height: 24px;
-        font-size: 11px;
-        display: flex;
+        display: inline-flex;
         align-items: center;
+        justify-content: center;
     }
+
     button:hover {
         background: var(--vscode-button-secondaryHoverBackground);
     }
