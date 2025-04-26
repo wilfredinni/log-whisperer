@@ -41,7 +41,12 @@ export class LogViewerPanel {
   public updateEntries(entries: LogEntry[], isLoading: boolean = false) {
     this.allLogs = entries;
     this.isLoading = isLoading;
-    this.applyFiltersAsync(true); // true indicates this is a progressive update
+    if (!isLoading && entries.length > 0) {
+      this.currentLogs = entries;
+      this.updateWebview();
+    } else {
+      this.applyFiltersAsync(true); // true indicates this is a progressive update
+    }
   }
 
   private setupMessageHandling(context: vscode.ExtensionContext) {
@@ -148,12 +153,14 @@ export class LogViewerPanel {
       });
     }
 
+    this.isLoading = false;
     const stats = this.calculateStats();
     this.panel.webview.postMessage({
       command: "updateLogs",
       logs: this.currentLogs,
       stats,
       filters: this.filters,
+      isLoading: this.isLoading,
     });
   }
 
@@ -173,11 +180,11 @@ export class LogViewerPanel {
 
   private calculateStats(): LogStats {
     const stats: LogStats = {
-      totalEntries:
-        this.currentLogs.length + (this.isLoading ? "... (Loading)" : ""),
+      totalEntries: this.isLoading
+        ? "Loading..."
+        : `${this.currentLogs.length}`,
       byLevel: {} as Record<string, number>,
       byLogger: {} as Record<string, number>,
-      // Keep track of all unique levels and loggers from both current and all logs
       allLevels: [
         ...new Set([
           ...this.allLogs.map((log) => log.level),
@@ -192,13 +199,15 @@ export class LogViewerPanel {
       ],
     };
 
-    // Process stats in chunks to avoid blocking
-    for (let i = 0; i < this.currentLogs.length; i += this.CHUNK_SIZE) {
-      const chunk = this.currentLogs.slice(i, i + this.CHUNK_SIZE);
-      chunk.forEach((log) => {
-        stats.byLevel[log.level] = (stats.byLevel[log.level] || 0) + 1;
-        stats.byLogger[log.logger] = (stats.byLogger[log.logger] || 0) + 1;
-      });
+    if (!this.isLoading) {
+      // Process stats in chunks to avoid blocking
+      for (let i = 0; i < this.currentLogs.length; i += this.CHUNK_SIZE) {
+        const chunk = this.currentLogs.slice(i, i + this.CHUNK_SIZE);
+        chunk.forEach((log) => {
+          stats.byLevel[log.level] = (stats.byLevel[log.level] || 0) + 1;
+          stats.byLogger[log.logger] = (stats.byLogger[log.logger] || 0) + 1;
+        });
+      }
     }
 
     return stats;

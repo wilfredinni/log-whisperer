@@ -109,30 +109,30 @@ const BASE_STYLES = `
     }
 
     /* Column widths - updated for proper auto-growing */
-    .col-actions { 
+    .col-actions {
         width: 30px;
         min-width: 30px;
         max-width: 30px;
     }
-    
-    .col-timestamp { 
+
+    .col-timestamp {
         min-width: 140px;
     }
-    
-    .col-level { 
+
+    .col-level {
         min-width: 70px;
     }
-    
-    .col-logger { 
+
+    .col-logger {
         min-width: 100px;
     }
-    
-    .col-message { 
+
+    .col-message {
         min-width: 200px;
     }
 
     /* Make message column take remaining space while allowing table to scroll horizontally */
-    .col-message { 
+    .col-message {
         width: 100%;
     }
 
@@ -324,6 +324,49 @@ export function getWebviewContent(
   stats: LogStats,
   filters: LogFilters
 ): string {
+  const generateStatsHTMLClient = `function generateStatsHTML(stats) {
+        return \`
+            <div class="stats">
+                <h3>Log Statistics</h3>
+                <p>Showing \${stats.totalEntries} entries</p>
+                <div class="stats-levels">
+                    \${Object.entries(stats.byLevel)
+                        .map(([level, count]) => 
+                            \`<div><span class="level-indicator" style="background: \${getLogLevelColor(level)}"></span>\${level}: \${count}</div>\`)
+                        .join('')}
+                </div>
+            </div>
+        \`;
+    }`;
+
+  const generateFiltersHTMLClient = `function generateFiltersHTML(stats, filters) {
+        return \`
+            <div class="filters">
+                <div class="filter-group">
+                    <label>Level:</label>
+                    <select id="levelFilter">
+                        <option value="">All Levels</option>
+                        \${stats.allLevels
+                            .map(level => 
+                                \`<option value="\${level}" \${filters.level === level ? 'selected' : ''}>\${level}</option>\`)
+                            .join('')}
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Logger:</label>
+                    <select id="loggerFilter">
+                        <option value="">All Loggers</option>
+                        \${stats.allLoggers
+                            .map(logger => 
+                                \`<option value="\${logger}" \${filters.logger === logger ? 'selected' : ''}>\${logger}</option>\`)
+                            .join('')}
+                    </select>
+                </div>
+                <button id="clearFilters">Clear Filters</button>
+            </div>
+        \`;
+    }`;
+
   return `<!DOCTYPE html>
     <html>
     <head>
@@ -336,7 +379,7 @@ export function getWebviewContent(
     </head>
     <body>
         <div class="container">
-            <div class="header">
+            <div class="header" id="statsAndFilters">
                 ${generateStatsHTML(stats)}
                 ${generateFiltersHTML(stats, filters)}
             </div>
@@ -361,6 +404,23 @@ export function getWebviewContent(
         <script>
             const vscode = acquireVsCodeApi();
             let logs = ${JSON.stringify(logs)};
+            let currentStats = ${JSON.stringify(stats)};
+
+            function getLogLevelColor(level) {
+                switch (level.toLowerCase()) {
+                    case "error":
+                        return "var(--vscode-errorForeground)";
+                    case "warning":
+                        return "var(--vscode-problemsWarningIcon-foreground)";
+                    case "info":
+                        return "var(--vscode-notificationsInfoIcon-foreground)";
+                    default:
+                        return "var(--vscode-foreground)";
+                }
+            }
+            
+            ${generateStatsHTMLClient}
+            ${generateFiltersHTMLClient}
             
             function renderLogRow(log, index) {
                 const gotoFileButton = log.filePath 
@@ -385,21 +445,48 @@ export function getWebviewContent(
                     </tr>\`;
             }
 
-            function updateTable(logs, filters) {
+            function updateUI(logs, stats, filters) {
+                // Update table
                 const tableBody = document.getElementById('logTableBody');
                 if (tableBody) {
                     tableBody.innerHTML = logs.map((log, index) => renderLogRow(log, index)).join('');
                 }
 
-                // Update filter selections
+                // Update stats and filters section
+                const statsAndFilters = document.getElementById('statsAndFilters');
+                if (statsAndFilters) {
+                    statsAndFilters.innerHTML = generateStatsHTML(stats) + generateFiltersHTML(stats, filters);
+                }
+
+                // Reattach event listeners
                 const levelFilter = document.getElementById('levelFilter');
                 const loggerFilter = document.getElementById('loggerFilter');
+                const clearFiltersBtn = document.getElementById('clearFilters');
                 
-                if (levelFilter && filters.level !== undefined) {
-                    levelFilter.value = filters.level;
+                if (levelFilter) {
+                    levelFilter.value = filters.level || '';
+                    levelFilter.addEventListener('change', (e) => {
+                        vscode.postMessage({
+                            command: 'filterLogs',
+                            level: e.target.value
+                        });
+                    });
                 }
-                if (loggerFilter && filters.logger !== undefined) {
-                    loggerFilter.value = filters.logger;
+                
+                if (loggerFilter) {
+                    loggerFilter.value = filters.logger || '';
+                    loggerFilter.addEventListener('change', (e) => {
+                        vscode.postMessage({
+                            command: 'filterLogs',
+                            logger: e.target.value
+                        });
+                    });
+                }
+
+                if (clearFiltersBtn) {
+                    clearFiltersBtn.addEventListener('click', () => {
+                        vscode.postMessage({ command: 'clearFilters' });
+                    });
                 }
             }
 
@@ -412,31 +499,14 @@ export function getWebviewContent(
             }
 
             // Initial render
-            updateTable(logs, ${JSON.stringify(filters)});
-
-            document.getElementById('levelFilter')?.addEventListener('change', (e) => {
-                vscode.postMessage({
-                    command: 'filterLogs',
-                    level: e.target.value
-                });
-            });
-
-            document.getElementById('loggerFilter')?.addEventListener('change', (e) => {
-                vscode.postMessage({
-                    command: 'filterLogs',
-                    logger: e.target.value
-                });
-            });
-
-            document.getElementById('clearFilters')?.addEventListener('click', () => {
-                vscode.postMessage({ command: 'clearFilters' });
-            });
+            updateUI(logs, currentStats, ${JSON.stringify(filters)});
 
             window.addEventListener('message', event => {
                 const message = event.data;
                 if (message.command === 'updateLogs') {
                     logs = message.logs;
-                    updateTable(logs, message.filters || {});
+                    currentStats = message.stats;
+                    updateUI(logs, message.stats, message.filters || {});
                 }
             });
         </script>
