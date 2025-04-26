@@ -193,7 +193,7 @@ export function getWebviewContent(
             function getEntryTop(index) {
                 // Calculate position taking into account expanded entries before this one
                 let top = index * ROW_HEIGHT;
-                
+
                 for (const [expandedIdx, height] of expandedEntries.entries()) {
                     if (expandedIdx < index) {
                         top += (height - ROW_HEIGHT);
@@ -213,11 +213,11 @@ export function getWebviewContent(
                 // Determine visible range based on scroll position
                 const scrollTop = virtualScroller.scrollTop;
                 const containerHeight = virtualScroller.clientHeight;
-                
+
                 // Find the visible range, taking expanded entries into account
                 let startIdx = 0;
                 let currentHeight = 0;
-                
+
                 // Find approximate start index based on scroll position
                 for (let i = 0; i < logs.length; i++) {
                     const entryHeight = expandedEntries.has(i) ? expandedEntries.get(i) : ROW_HEIGHT;
@@ -227,7 +227,7 @@ export function getWebviewContent(
                     }
                     currentHeight += entryHeight;
                 }
-                
+
                 // Find end index (adding buffer)
                 let endIdx = startIdx;
                 let visibleHeight = 0;
@@ -242,17 +242,17 @@ export function getWebviewContent(
                     const log = logs[i];
                     const div = document.createElement('div');
                     div.className = 'log-entry';
-                    
+
                     // Position based on expanded entries
                     const top = getEntryTop(i);
                     div.style.top = \`\${top}px\`;
-                    
+
                     // Set height if expanded
                     if (expandedEntries.has(i)) {
                         div.classList.add('expanded');
                         div.style.height = \`\${expandedEntries.get(i)}px\`;
                     }
-                    
+
                     div.style.borderLeftColor = getLogLevelColor(log.level);
                     div.dataset.index = i;
 
@@ -275,7 +275,7 @@ export function getWebviewContent(
                     if (log.raw && log.raw !== log.message) {
                         message.classList.add('has-multiline');
                     }
-                    
+
                     // Show full content if expanded
                     if (expandedEntries.has(i)) {
                         message.textContent = log.raw;
@@ -322,14 +322,14 @@ export function getWebviewContent(
                         if (log.raw && log.raw !== log.message) {
                             const isExpanding = !div.classList.contains('expanded');
                             div.classList.toggle('expanded');
-                            
+
                             // Update message content
                             message.textContent = isExpanding ? log.raw : log.message;
 
                             // Calculate new height
                             const lines = log.raw.split('\\n').length;
                             const newHeight = isExpanding ? Math.max(40, lines * 20) : 40; // 20px per line
-                            
+
                             // Track expansion state
                             const index = parseInt(div.dataset.index);
                             if (isExpanding) {
@@ -337,10 +337,10 @@ export function getWebviewContent(
                             } else {
                                 expandedEntries.delete(index);
                             }
-                            
+
                             // Update the UI
                             renderVisibleLogs();
-                            
+
                             // Ensure the clicked entry remains visible
                             const entryTop = getEntryTop(index);
                             if (entryTop < scrollTop) {
