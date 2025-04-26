@@ -296,7 +296,7 @@ export function getWebviewContent(
                 gotoFile.className = 'goto-file';
                 gotoFile.textContent = '👁️';
                 gotoFile.title = log.filePath ? 'Go to this log in file' : 'File path not available';
-                
+
                 if (log.filePath) {
                     gotoFile.addEventListener('click', (e) => {
                         e.stopPropagation();
