@@ -78,20 +78,17 @@ export class LogViewerPanel {
               typeof message.logger === "string" ||
               typeof message.search === "string"
             ) {
-              this.filters = {
-                level:
-                  typeof message.level === "string"
-                    ? message.level
-                    : this.filters.level,
-                logger:
-                  typeof message.logger === "string"
-                    ? message.logger
-                    : this.filters.logger,
-                search:
-                  typeof message.search === "string"
-                    ? message.search
-                    : this.filters.search,
-              };
+              if (typeof message.level === "string") {
+                this.filters.level = message.level;
+                // Reset logger filter when level changes
+                this.filters.logger = "";
+              }
+              if (typeof message.logger === "string") {
+                this.filters.logger = message.logger;
+              }
+              if (typeof message.search === "string") {
+                this.filters.search = message.search;
+              }
               await this.applyFiltersAsync();
             }
             break;
@@ -116,34 +113,31 @@ export class LogViewerPanel {
   }
 
   private async applyFiltersAsync(isProgressiveUpdate: boolean = false) {
+    const applyFilter = (log: LogEntry) => {
+      const levelMatch =
+        !this.filters.level ||
+        log.level.toLowerCase() === this.filters.level.toLowerCase();
+
+      const loggerMatch =
+        !this.filters.logger || log.logger === this.filters.logger;
+
+      const searchMatch =
+        !this.filters.search ||
+        log.level.toLowerCase().includes(this.filters.search.toLowerCase()) ||
+        log.logger.toLowerCase().includes(this.filters.search.toLowerCase()) ||
+        log.message.toLowerCase().includes(this.filters.search.toLowerCase());
+
+      return levelMatch && loggerMatch && searchMatch;
+    };
+
     if (!isProgressiveUpdate) {
-      // Only show filtering progress for user-initiated filters
       const startTime = Date.now();
       let filteredLogs: LogEntry[] = [];
 
       // Process logs in chunks to avoid blocking the UI
       for (let i = 0; i < this.allLogs.length; i += this.CHUNK_SIZE) {
         const chunk = this.allLogs.slice(i, i + this.CHUNK_SIZE);
-        const filteredChunk = chunk.filter((log) => {
-          const levelMatch =
-            !this.filters.level ||
-            log.level.toLowerCase() === this.filters.level.toLowerCase();
-          const loggerMatch =
-            !this.filters.logger || log.logger === this.filters.logger;
-          const searchMatch =
-            !this.filters.search ||
-            log.level
-              .toLowerCase()
-              .includes(this.filters.search.toLowerCase()) ||
-            log.logger
-              .toLowerCase()
-              .includes(this.filters.search.toLowerCase()) ||
-            log.message
-              .toLowerCase()
-              .includes(this.filters.search.toLowerCase());
-          return levelMatch && loggerMatch && searchMatch;
-        });
-
+        const filteredChunk = chunk.filter(applyFilter);
         filteredLogs = filteredLogs.concat(filteredChunk);
 
         // Every 100ms, update the UI with progress
@@ -158,23 +152,10 @@ export class LogViewerPanel {
       this.currentLogs = filteredLogs;
     } else {
       // For progressive updates, apply filters immediately
-      this.currentLogs = this.allLogs.filter((log) => {
-        const levelMatch =
-          !this.filters.level ||
-          log.level.toLowerCase() === this.filters.level.toLowerCase();
-        const loggerMatch =
-          !this.filters.logger || log.logger === this.filters.logger;
-        const searchMatch =
-          !this.filters.search ||
-          log.level.toLowerCase().includes(this.filters.search.toLowerCase()) ||
-          log.logger
-            .toLowerCase()
-            .includes(this.filters.search.toLowerCase()) ||
-          log.message.toLowerCase().includes(this.filters.search.toLowerCase());
-        return levelMatch && loggerMatch && searchMatch;
-      });
+      this.currentLogs = this.allLogs.filter(applyFilter);
     }
 
+    // Update UI with final results
     this.isLoading = false;
     const stats = this.calculateStats();
     this.panel.webview.postMessage({
@@ -208,18 +189,8 @@ export class LogViewerPanel {
       byLevel: {} as Record<string, number>,
       byLogger: {} as Record<string, number>,
       totalByLevel: {} as Record<string, number>,
-      allLevels: [
-        ...new Set([
-          ...this.allLogs.map((log) => log.level),
-          ...this.currentLogs.map((log) => log.level),
-        ]),
-      ],
-      allLoggers: [
-        ...new Set([
-          ...this.allLogs.map((log) => log.logger),
-          ...this.currentLogs.map((log) => log.logger),
-        ]),
-      ],
+      allLevels: [...new Set(this.allLogs.map((log) => log.level))],
+      allLoggers: [],
     };
 
     if (!this.isLoading) {
@@ -230,6 +201,20 @@ export class LogViewerPanel {
           stats.totalByLevel[log.level] =
             (stats.totalByLevel[log.level] || 0) + 1;
         });
+      }
+
+      // If a level is selected, only show loggers that have logs of that level
+      const loggersForLevel = new Set<string>();
+      if (this.filters.level) {
+        this.allLogs.forEach((log) => {
+          if (log.level.toLowerCase() === this.filters.level?.toLowerCase()) {
+            loggersForLevel.add(log.logger);
+          }
+        });
+        stats.allLoggers = Array.from(loggersForLevel);
+      } else {
+        // If no level selected, show all loggers
+        stats.allLoggers = [...new Set(this.allLogs.map((log) => log.logger))];
       }
 
       // Then calculate filtered counts

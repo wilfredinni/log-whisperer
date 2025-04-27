@@ -469,7 +469,7 @@ export function getWebviewContent(
                 </div>
                 <div class="stats-levels">
                     \${Object.entries(stats.totalByLevel)
-                        .map(([level, count]) => 
+                        .map(([level, count]) =>
                             \`<div class="stat-item">
                                 <span class="level-dot" style="background: \${getLogLevelColor(level)}"></span>
                                 <span class="stat-count">\${count}</span>
@@ -493,7 +493,7 @@ export function getWebviewContent(
                     <select id="levelFilter">
                         <option value="">All Levels</option>
                         \${stats.allLevels
-                            .map(level => 
+                            .map(level =>
                                 \`<option value="\${level}" \${filters.level === level ? 'selected' : ''}>\${level}</option>\`)
                             .join('')}
                     </select>
@@ -503,7 +503,7 @@ export function getWebviewContent(
                     <select id="loggerFilter">
                         <option value="">All Loggers</option>
                         \${stats.allLoggers
-                            .map(logger => 
+                            .map(logger =>
                                 \`<option value="\${logger}" \${filters.logger === logger ? 'selected' : ''}>\${logger}</option>\`)
                             .join('')}
                     </select>
@@ -529,7 +529,7 @@ export function getWebviewContent(
                 ${generateStatsHTML(stats)}
                 ${generateFiltersHTML(stats, filters)}
             </div>
-            
+
             <div class="table-container">
                 <table class="log-table">
                     <thead class="log-table-header">
@@ -549,8 +549,9 @@ export function getWebviewContent(
 
         <script>
             const vscode = acquireVsCodeApi();
-            let logs = ${JSON.stringify(logs)};
+            let currentLogs = ${JSON.stringify(logs)};
             let currentStats = ${JSON.stringify(stats)};
+            let currentFilters = ${JSON.stringify(filters)};
 
             function getLogLevelColor(level) {
                 switch (level.toLowerCase()) {
@@ -570,12 +571,12 @@ export function getWebviewContent(
                         return "var(--vscode-foreground)";
                 }
             }
-            
+
             ${generateStatsHTMLClient}
             ${generateFiltersHTMLClient}
-            
+
             function renderLogRow(log, index) {
-                const gotoFileButton = log.filePath 
+                const gotoFileButton = log.filePath
                     ? \`<span class="goto-file" title="Open file at line \${log.lineNumber}" style="cursor: pointer; opacity: 0.6;" onclick="gotoFile('\${log.filePath}', \${log.lineNumber})">
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                             <path d="M12 8.66667V12.6667C12 13.0203 11.8595 13.3594 11.6095 13.6095C11.3594 13.8595 11.0203 14 10.6667 14H3.33333C2.97971 14 2.64057 13.8595 2.39052 13.6095C2.14048 13.3594 2 13.0203 2 12.6667V5.33333C2 4.97971 2.14048 4.64057 2.39052 4.39052C2.64057 4.14048 2.97971 4 3.33333 4H7.33333" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -590,34 +591,38 @@ export function getWebviewContent(
                         <td class="col-actions">\${gotoFileButton}</td>
                         <td class="col-timestamp">\${log.timestamp}</td>
                         <td class="col-level">
-                            <span class="level-badge" data-level="\${log.level.toLowerCase()}">\${log.level}</span>
+                            <span class="level-badge" data-level="\${log.level.toLowerCase()}" title="\${log.level}">\${log.level}</span>
                         </td>
                         <td class="col-logger">\${log.logger}</td>
                         <td class="col-message">\${log.message}</td>
                     </tr>\`;
             }
 
-            function updateUI(logs, stats, filters) {
+            function updateUI() {
                 // Update table
                 const tableBody = document.getElementById('logTableBody');
                 if (tableBody) {
-                    tableBody.innerHTML = logs.map((log, index) => renderLogRow(log, index)).join('');
+                    tableBody.innerHTML = currentLogs.map((log, index) => renderLogRow(log, index)).join('');
                 }
 
                 // Update stats and filters section
                 const statsAndFilters = document.getElementById('statsAndFilters');
                 if (statsAndFilters) {
-                    statsAndFilters.innerHTML = generateStatsHTML(stats) + generateFiltersHTML(stats, filters);
+                    statsAndFilters.innerHTML = generateStatsHTML(currentStats) + generateFiltersHTML(currentStats, currentFilters);
                 }
 
-                // Reattach event listeners
+                // Setup filter event listeners
+                setupFilterEventListeners();
+            }
+
+            function setupFilterEventListeners() {
                 const levelFilter = document.getElementById('levelFilter');
                 const loggerFilter = document.getElementById('loggerFilter');
                 const searchFilter = document.getElementById('searchFilter');
                 const clearFiltersBtn = document.getElementById('clearFilters');
-                
+
                 if (levelFilter) {
-                    levelFilter.value = filters.level || '';
+                    levelFilter.value = currentFilters.level || '';
                     levelFilter.addEventListener('change', (e) => {
                         vscode.postMessage({
                             command: 'filterLogs',
@@ -625,9 +630,9 @@ export function getWebviewContent(
                         });
                     });
                 }
-                
+
                 if (loggerFilter) {
-                    loggerFilter.value = filters.logger || '';
+                    loggerFilter.value = currentFilters.logger || '';
                     loggerFilter.addEventListener('change', (e) => {
                         vscode.postMessage({
                             command: 'filterLogs',
@@ -637,7 +642,7 @@ export function getWebviewContent(
                 }
 
                 if (searchFilter) {
-                    searchFilter.value = filters.search || '';
+                    searchFilter.value = currentFilters.search || '';
                     let searchTimeout;
                     searchFilter.addEventListener('input', (e) => {
                         clearTimeout(searchTimeout);
@@ -646,7 +651,7 @@ export function getWebviewContent(
                                 command: 'filterLogs',
                                 search: e.target.value
                             });
-                        }, 300); // Debounce search for better performance
+                        }, 300);
                     });
                 }
 
@@ -666,14 +671,16 @@ export function getWebviewContent(
             }
 
             // Initial render
-            updateUI(logs, currentStats, ${JSON.stringify(filters)});
+            updateUI();
 
-            window.addEventListener('message', event => {
+            // Handle messages from the extension
+            window.addEventListener('message', (event) => {
                 const message = event.data;
                 if (message.command === 'updateLogs') {
-                    logs = message.logs;
+                    currentLogs = message.logs;
                     currentStats = message.stats;
-                    updateUI(logs, message.stats, message.filters || {});
+                    currentFilters = message.filters || {};
+                    updateUI();
                 }
             });
         </script>
