@@ -218,22 +218,21 @@ export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
                 .file-header {
                     padding: 8px 12px;
                     display: flex;
-                    align-items: center;
-                    justify-content: space-between;
+                    flex-direction: column;
+                    gap: 8px;
                     cursor: pointer;
                     user-select: none;
                 }
-                .file-info {
+                .file-name-row {
                     display: flex;
+                    justify-content: space-between;
                     align-items: center;
-                    gap: 8px;
+                    width: 100%;
                 }
                 .file-name {
                     font-weight: 500;
                     color: var(--vscode-editor-foreground);
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
+                    font-size: 12px;
                 }
                 .total-count {
                     color: var(--vscode-descriptionForeground);
@@ -243,7 +242,7 @@ export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
                 .log-badges {
                     display: flex;
                     gap: 4px;
-                    margin-left: auto;
+                    flex-wrap: wrap;
                 }
                 .log-badge {
                     display: inline-flex;
@@ -325,13 +324,13 @@ export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
                         return `
                             <div class="log-file" data-path="${file.path}">
                                 <div class="file-header">
-                                    <div class="file-info">
-                                        <span class="file-name">
-                                            ${file.name}
-                                            <span class="total-count">${formatNumber(
-                                              summary.total
-                                            )} logs</span>
-                                        </span>
+                                    <div class="file-name-row">
+                                        <span class="file-name">${
+                                          file.name
+                                        }</span>
+                                        <span class="total-count">${formatNumber(
+                                          summary.total
+                                        )} logs</span>
                                     </div>
                                     <div class="log-badges">
                                         <span class="log-badge fatal" data-has-logs="${
