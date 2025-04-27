@@ -100,7 +100,7 @@ export async function* parseLogFileStream(
 export function getLogLevelColor(level: string): string {
   switch (level.toLowerCase()) {
     case "fatal":
-      return "#ff0000"; // Bright red for fatal errors
+      return "#cc0000"; // Less bright red for fatal errors
     case "error":
       return "#ff4444"; // Standard red for errors
     case "warning":

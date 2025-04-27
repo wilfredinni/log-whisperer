@@ -241,28 +241,40 @@ export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
                 }
                 .log-badges {
                     display: flex;
-                    gap: 4px;
-                    flex-wrap: wrap;
+                    gap: 0;
+                    width: 100%;
+                    padding: 0;
+                    margin: 0;
                 }
                 .log-badge {
-                    display: inline-flex;
+                    display: flex;
                     align-items: center;
-                    padding: 2px 6px;
-                    border-radius: 3px;
+                    padding: 2px 0;
+                    border-radius: 0;
                     font-size: 10px;
                     font-weight: 600;
-                    min-width: 30px;
                     height: 14px;
                     justify-content: center;
-                    opacity: 0.4;
-                    transition: opacity 0.2s ease;
+                    flex: 1;
+                    min-width: 0;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
                 }
                 .log-badge[data-has-logs="true"] {
                     opacity: 1;
                 }
+                .log-badge:first-child {
+                    border-top-left-radius: 3px;
+                    border-bottom-left-radius: 3px;
+                }
+                .log-badge:last-child {
+                    border-top-right-radius: 3px;
+                    border-bottom-right-radius: 3px;
+                }
                 .log-badge.fatal {
-                    background-color: var(--vscode-testing-message-error-decorationForeground);
-                    color: var(--vscode-editor-background);
+                    background-color: #cc0000;
+                    color: #ffffff;
                 }
                 .log-badge.error {
                     background-color: var(--vscode-errorForeground);

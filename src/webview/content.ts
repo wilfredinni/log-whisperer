@@ -276,7 +276,7 @@ const BASE_STYLES = `
     }
 
     .level-badge[data-level="fatal"] {
-        background-color: #ff0000;
+        background-color: #cc0000;
         color: #ffffff;
     }
 
