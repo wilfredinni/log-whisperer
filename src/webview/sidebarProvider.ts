@@ -133,6 +133,10 @@ export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
       }
     };
 
+    const formatNumber = (num: number): string => {
+      return num.toLocaleString();
+    };
+
     return `<!DOCTYPE html>
         <html lang="en">
         <head>
@@ -212,13 +216,17 @@ export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
                     align-items: center;
                     gap: 8px;
                 }
-                .file-icon {
-                    opacity: 0.8;
-                    color: var(--vscode-icon-foreground);
-                }
                 .file-name {
                     font-weight: 500;
                     color: var(--vscode-editor-foreground);
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+                .total-count {
+                    color: var(--vscode-descriptionForeground);
+                    font-size: 11px;
+                    font-weight: normal;
                 }
                 .log-badges {
                     display: flex;
@@ -294,28 +302,30 @@ export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
                             <div class="log-file" data-path="${file.path}">
                                 <div class="file-header">
                                     <div class="file-info">
-                                        <span class="file-icon">
-                                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                                <path d="M13.85 4.44l-3.28-3.3-.35-.14H2.5l-.5.5v13l.5.5h11l.5-.5V4.8l-.15-.36zM13 13.5H3v-12h6.5l3.5 3.5v8.5z" fill="currentColor"/>
-                                            </svg>
+                                        <span class="file-name">
+                                            ${file.name}
+                                            <span class="total-count">${formatNumber(
+                                              summary.total
+                                            )} logs</span>
                                         </span>
-                                        <span class="file-name">${
-                                          file.name
-                                        }</span>
                                     </div>
                                     <div class="log-badges">
                                         <span class="log-badge error" data-has-logs="${
                                           summary.errors > 0
-                                        }">${summary.errors}</span>
+                                        }">${formatNumber(
+                          summary.errors
+                        )}</span>
                                         <span class="log-badge warning" data-has-logs="${
                                           summary.warnings > 0
-                                        }">${summary.warnings}</span>
+                                        }">${formatNumber(
+                          summary.warnings
+                        )}</span>
                                         <span class="log-badge info" data-has-logs="${
                                           summary.info > 0
-                                        }">${summary.info}</span>
+                                        }">${formatNumber(summary.info)}</span>
                                         <span class="log-badge other" data-has-logs="${
                                           summary.other > 0
-                                        }">${summary.other}</span>
+                                        }">${formatNumber(summary.other)}</span>
                                     </div>
                                 </div>
                             </div>
