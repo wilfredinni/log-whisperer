@@ -235,6 +235,11 @@ export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
                     min-width: 30px;
                     height: 14px;
                     justify-content: center;
+                    opacity: 0.4;
+                    transition: opacity 0.2s ease;
+                }
+                .log-badge[data-has-logs="true"] {
+                    opacity: 1;
                 }
                 .log-badge.error {
                     background-color: var(--vscode-errorForeground);
@@ -299,26 +304,18 @@ export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
                                         }</span>
                                     </div>
                                     <div class="log-badges">
-                                        ${
+                                        <span class="log-badge error" data-has-logs="${
                                           summary.errors > 0
-                                            ? `<span class="log-badge error">${summary.errors}</span>`
-                                            : ""
-                                        }
-                                        ${
+                                        }">${summary.errors}</span>
+                                        <span class="log-badge warning" data-has-logs="${
                                           summary.warnings > 0
-                                            ? `<span class="log-badge warning">${summary.warnings}</span>`
-                                            : ""
-                                        }
-                                        ${
+                                        }">${summary.warnings}</span>
+                                        <span class="log-badge info" data-has-logs="${
                                           summary.info > 0
-                                            ? `<span class="log-badge info">${summary.info}</span>`
-                                            : ""
-                                        }
-                                        ${
+                                        }">${summary.info}</span>
+                                        <span class="log-badge other" data-has-logs="${
                                           summary.other > 0
-                                            ? `<span class="log-badge other">${summary.other}</span>`
-                                            : ""
-                                        }
+                                        }">${summary.other}</span>
                                     </div>
                                 </div>
                             </div>
@@ -330,7 +327,7 @@ export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
 
             <script>
                 const vscode = acquireVsCodeApi();
-                
+
                 document.getElementById('refreshButton').addEventListener('click', () => {
                     vscode.postMessage({ command: 'refresh' });
                 });
