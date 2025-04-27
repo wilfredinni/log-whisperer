@@ -125,7 +125,7 @@ export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
         case "error":
           return "var(--vscode-errorForeground)";
         case "warning":
-          return "var(--vscode-warningForeground)";
+          return "var(--vscode-problemsWarningIcon-foreground)";
         case "info":
           return "var(--vscode-notificationsInfoIcon-foreground)";
         default:
@@ -194,7 +194,6 @@ export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
                     border-radius: 4px;
                     border: 1px solid var(--vscode-widget-border);
                     transition: all 0.1s ease;
-                    overflow: hidden;
                 }
                 .log-file:hover {
                     background: var(--vscode-list-hoverBackground);
@@ -221,41 +220,37 @@ export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
                     font-weight: 500;
                     color: var(--vscode-editor-foreground);
                 }
-                .total-count {
-                    font-size: 11px;
+                .log-badges {
+                    display: flex;
+                    gap: 4px;
+                    margin-left: auto;
+                }
+                .log-badge {
+                    display: inline-flex;
+                    align-items: center;
                     padding: 2px 6px;
-                    background: var(--vscode-badge-background);
-                    color: var(--vscode-badge-foreground);
-                    border-radius: 10px;
-                }
-                .stats {
-                    padding: 0 12px 8px;
-                    display: grid;
-                    grid-template-columns: repeat(2, 1fr);
-                    gap: 8px;
-                }
-                .stat-item {
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
-                    font-size: 11px;
-                    padding: 4px;
                     border-radius: 3px;
-                    background: var(--vscode-textBlockQuote-background);
-                }
-                .stat-icon {
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    width: 16px;
-                    height: 16px;
-                }
-                .stat-count {
+                    font-size: 10px;
                     font-weight: 600;
-                    color: var(--vscode-input-foreground);
+                    min-width: 30px;
+                    height: 14px;
+                    justify-content: center;
                 }
-                .stat-label {
-                    color: var(--vscode-descriptionForeground);
+                .log-badge.error {
+                    background-color: var(--vscode-errorForeground);
+                    color: var(--vscode-editor-background);
+                }
+                .log-badge.warning {
+                    background-color: var(--vscode-problemsWarningIcon-foreground);
+                    color: var(--vscode-editor-background);
+                }
+                .log-badge.info {
+                    background-color: var(--vscode-notificationsInfoIcon-foreground);
+                    color: var(--vscode-editor-background);
+                }
+                .log-badge.other {
+                    background-color: var(--vscode-descriptionForeground);
+                    color: var(--vscode-editor-background);
                 }
                 .empty-state {
                     padding: 24px 16px;
@@ -270,7 +265,7 @@ export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
                 <h3>Log Files</h3>
                 <button class="refresh-button" id="refreshButton">
                     <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                        <path d="M13.666 3.667l-1.334-1.334v2H10.25l-.583.583C8.75 4.083 7.583 3.667 6.333 3.667c-2.917 0-5.25 2.333-5.25 5.25s2.333 5.25 5.25 5.25 5.25-2.333 5.25-5.25h-1.75c0 1.917-1.583 3.5-3.5 3.5s-3.5-1.583-3.5-3.5 1.583-3.5 3.5-3.5c.917 0 1.75.333 2.333.917l-1.75 1.75h4.667v-4.667z" fill="currentColor"/>
+                        <path d="M13.666 3.667l-1.334-1.334v2H10.25l-.583.583C8.75 4.083 7.583 3.667 6.333 3.667c-2.917 0-5.25 2.333-5.25 5.25s2.333 5.25 5.25 5.25 5.25-2.333 5.25-5.25h-1.75c0 1.917-1.583 3.5-3.5 3.5s-3.5-1.583-3.5-3.5 1.583-3.5 3.5-3.5c.917 0 1.75.333 2.333.917l-1.75 1.75h4.084v-4.084z" fill="currentColor"/>
                     </svg>
                     Refresh
                 </button>
@@ -303,60 +298,27 @@ export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
                                           file.name
                                         }</span>
                                     </div>
-                                    <span class="total-count">${
-                                      summary.total
-                                    }</span>
-                                </div>
-                                <div class="stats">
-                                    <div class="stat-item">
-                                        <span class="stat-icon" style="color: ${getLogLevelColor(
-                                          "error"
-                                        )}">
-                                            <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-                                                <circle cx="8" cy="8" r="4" fill="currentColor"/>
-                                            </svg>
-                                        </span>
-                                        <span class="stat-count">${
-                                          summary.errors
-                                        }</span>
-                                        <span class="stat-label">Errors</span>
-                                    </div>
-                                    <div class="stat-item">
-                                        <span class="stat-icon" style="color: ${getLogLevelColor(
-                                          "warning"
-                                        )}">
-                                            <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-                                                <circle cx="8" cy="8" r="4" fill="currentColor"/>
-                                            </svg>
-                                        </span>
-                                        <span class="stat-count">${
-                                          summary.warnings
-                                        }</span>
-                                        <span class="stat-label">Warnings</span>
-                                    </div>
-                                    <div class="stat-item">
-                                        <span class="stat-icon" style="color: ${getLogLevelColor(
-                                          "info"
-                                        )}">
-                                            <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-                                                <circle cx="8" cy="8" r="4" fill="currentColor"/>
-                                            </svg>
-                                        </span>
-                                        <span class="stat-count">${
-                                          summary.info
-                                        }</span>
-                                        <span class="stat-label">Info</span>
-                                    </div>
-                                    <div class="stat-item">
-                                        <span class="stat-icon">
-                                            <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-                                                <circle cx="8" cy="8" r="4" fill="currentColor"/>
-                                            </svg>
-                                        </span>
-                                        <span class="stat-count">${
-                                          summary.other
-                                        }</span>
-                                        <span class="stat-label">Other</span>
+                                    <div class="log-badges">
+                                        ${
+                                          summary.errors > 0
+                                            ? `<span class="log-badge error">${summary.errors}</span>`
+                                            : ""
+                                        }
+                                        ${
+                                          summary.warnings > 0
+                                            ? `<span class="log-badge warning">${summary.warnings}</span>`
+                                            : ""
+                                        }
+                                        ${
+                                          summary.info > 0
+                                            ? `<span class="log-badge info">${summary.info}</span>`
+                                            : ""
+                                        }
+                                        ${
+                                          summary.other > 0
+                                            ? `<span class="log-badge other">${summary.other}</span>`
+                                            : ""
+                                        }
                                     </div>
                                 </div>
                             </div>
