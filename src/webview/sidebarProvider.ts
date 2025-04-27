@@ -347,29 +347,39 @@ export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
                                     <div class="log-badges">
                                         <span class="log-badge fatal" data-has-logs="${
                                           summary.fatal > 0
-                                        }">${formatNumber(summary.fatal)}</span>
+                                        }" title="FATAL">${formatNumber(
+                          summary.fatal
+                        )}</span>
                                         <span class="log-badge error" data-has-logs="${
                                           summary.errors > 0
-                                        }">${formatNumber(
+                                        }" title="ERROR">${formatNumber(
                           summary.errors
                         )}</span>
                                         <span class="log-badge warning" data-has-logs="${
                                           summary.warnings > 0
-                                        }">${formatNumber(
+                                        }" title="WARNING">${formatNumber(
                           summary.warnings
                         )}</span>
                                         <span class="log-badge info" data-has-logs="${
                                           summary.info > 0
-                                        }">${formatNumber(summary.info)}</span>
+                                        }" title="INFO">${formatNumber(
+                          summary.info
+                        )}</span>
                                         <span class="log-badge debug" data-has-logs="${
                                           summary.debug > 0
-                                        }">${formatNumber(summary.debug)}</span>
+                                        }" title="DEBUG">${formatNumber(
+                          summary.debug
+                        )}</span>
                                         <span class="log-badge trace" data-has-logs="${
                                           summary.trace > 0
-                                        }">${formatNumber(summary.trace)}</span>
+                                        }" title="TRACE">${formatNumber(
+                          summary.trace
+                        )}</span>
                                         <span class="log-badge other" data-has-logs="${
                                           summary.other > 0
-                                        }">${formatNumber(summary.other)}</span>
+                                        }" title="OTHER">${formatNumber(
+                          summary.other
+                        )}</span>
                                     </div>
                                 </div>
                             </div>
