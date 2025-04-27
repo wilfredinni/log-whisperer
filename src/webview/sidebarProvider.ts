@@ -169,7 +169,7 @@ export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
                     position: sticky;
                     top: 0;
                     z-index: 100;
-                    padding: 8px 27px;
+                    padding: 1px 27px;
                     margin: 0 -12px 12px;
                     background: var(--vscode-sideBar-background);
                     border-bottom: 1px solid var(--vscode-sideBarSectionHeader-border);
