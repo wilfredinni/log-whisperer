@@ -304,6 +304,23 @@ const BASE_STYLES = `
         background-color: var(--vscode-charts-purple);
         color: var(--vscode-editor-background);
     }
+
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 48px 24px;
+        color: var(--vscode-descriptionForeground);
+        font-size: 12px;
+        text-align: center;
+        height: 100%;
+    }
+
+    .empty-state-icon {
+        margin-bottom: 16px;
+        opacity: 0.5;
+    }
 `;
 
 const FILTER_STYLES = `
@@ -602,7 +619,26 @@ export function getWebviewContent(
                 // Update table
                 const tableBody = document.getElementById('logTableBody');
                 if (tableBody) {
-                    tableBody.innerHTML = currentLogs.map((log, index) => renderLogRow(log, index)).join('');
+                    if (currentLogs.length === 0) {
+                        const hasFilters = Boolean(currentFilters.level || currentFilters.logger || currentFilters.search);
+                        tableBody.innerHTML = \`
+                            <tr>
+                                <td colspan="5">
+                                    <div class="empty-state">
+                                        <div class="empty-state-icon">
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                                <path d="M4 19H20V12H22V20C22 20.2652 21.8946 20.5196 21.7071 20.7071C21.5196 20.8946 21.2652 21 21 21H3C2.73478 21 2.48043 20.8946 2.29289 20.7071C2.10536 20.5196 2 20.2652 2 20V12H4V19ZM13 9V15H11V9H13ZM12 4L21 10H3L12 4Z" fill="currentColor"/>
+                                            </svg>
+                                        </div>
+                                        No logs to display
+                                        \${hasFilters ? '<br>Try adjusting or clearing your filters' : ''}
+                                    </div>
+                                </td>
+                            </tr>
+                        \`;
+                    } else {
+                        tableBody.innerHTML = currentLogs.map((log, index) => renderLogRow(log, index)).join('');
+                    }
                 }
 
                 // Update stats and filters section
