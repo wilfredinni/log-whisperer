@@ -8,7 +8,8 @@ export interface ParseProgress {
 }
 
 const CHUNK_SIZE = 32 * 1024; // 32KB chunks
-const LOG_PATTERN = /^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d{3})\s+([\w.]+)\s+(\w+)\s+(.+)$/;
+const LOG_PATTERN =
+  /^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d{3})\s+([\w.]+)\s+(\w+)\s+(.+)$/;
 
 export async function* parseLogFileStream(
   uri: vscode.Uri
@@ -50,7 +51,7 @@ export async function* parseLogFileStream(
           message,
           raw: line,
           filePath,
-          lineNumber
+          lineNumber,
         };
         entries.push(currentEntry);
       } else if (currentEntry) {
@@ -81,7 +82,7 @@ export async function* parseLogFileStream(
         message,
         raw: buffer,
         filePath,
-        lineNumber
+        lineNumber,
       });
     } else if (currentEntry) {
       // Append remaining buffer to the current entry if it's not a new log
@@ -98,12 +99,18 @@ export async function* parseLogFileStream(
 
 export function getLogLevelColor(level: string): string {
   switch (level.toLowerCase()) {
+    case "fatal":
+      return "#ff0000"; // Bright red for fatal errors
     case "error":
-      return "#ff0000";
+      return "#ff4444"; // Standard red for errors
     case "warning":
-      return "#ffa500";
+      return "#ffa500"; // Orange for warnings
     case "info":
-      return "#00ff00";
+      return "#00ff00"; // Green for info
+    case "debug":
+      return "#00ffff"; // Cyan for debug
+    case "trace":
+      return "#ff00ff"; // Magenta for trace
     default:
       return "#ffffff";
   }

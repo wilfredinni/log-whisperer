@@ -275,6 +275,11 @@ const BASE_STYLES = `
         height: 18px;
     }
 
+    .level-badge[data-level="fatal"] {
+        background-color: #ff0000;
+        color: #ffffff;
+    }
+
     .level-badge[data-level="error"] {
         background-color: var(--vscode-errorForeground);
         color: var(--vscode-editor-background);
@@ -290,9 +295,13 @@ const BASE_STYLES = `
         color: var(--vscode-editor-background);
     }
 
-    .level-badge[data-level="debug"],
+    .level-badge[data-level="debug"] {
+        background-color: var(--vscode-debugIcon-startForeground);
+        color: var(--vscode-editor-background);
+    }
+
     .level-badge[data-level="trace"] {
-        background-color: var(--vscode-foreground);
+        background-color: var(--vscode-charts-purple);
         color: var(--vscode-editor-background);
     }
 `;
@@ -429,12 +438,18 @@ function generateFiltersHTML(stats: LogStats, filters: LogFilters): string {
 
 function getLogLevelColor(level: string): string {
   switch (level.toLowerCase()) {
+    case "fatal":
+      return "var(--vscode-testing-message-error-decorationForeground)";
     case "error":
       return "var(--vscode-errorForeground)";
     case "warning":
       return "var(--vscode-problemsWarningIcon-foreground)";
     case "info":
       return "var(--vscode-notificationsInfoIcon-foreground)";
+    case "debug":
+      return "var(--vscode-debugIcon-startForeground)";
+    case "trace":
+      return "var(--vscode-charts-purple)";
     default:
       return "var(--vscode-foreground)";
   }
@@ -539,12 +554,18 @@ export function getWebviewContent(
 
             function getLogLevelColor(level) {
                 switch (level.toLowerCase()) {
+                    case "fatal":
+                        return "var(--vscode-testing-message-error-decorationForeground)";
                     case "error":
                         return "var(--vscode-errorForeground)";
                     case "warning":
                         return "var(--vscode-problemsWarningIcon-foreground)";
                     case "info":
                         return "var(--vscode-notificationsInfoIcon-foreground)";
+                    case "debug":
+                        return "var(--vscode-debugIcon-startForeground)";
+                    case "trace":
+                        return "var(--vscode-charts-purple)";
                     default:
                         return "var(--vscode-foreground)";
                 }

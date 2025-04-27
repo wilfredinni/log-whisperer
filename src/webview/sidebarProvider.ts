@@ -6,8 +6,11 @@ import { parseLogFileStream } from "../utils/parser";
 interface LogSummary {
   total: number;
   errors: number;
+  fatal: number;
   warnings: number;
   info: number;
+  debug: number;
+  trace: number;
   other: number;
 }
 
@@ -89,20 +92,29 @@ export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
   private calculateLogSummary(entries: LogEntry[]): LogSummary {
     const summary: LogSummary = {
       total: entries.length,
+      fatal: 0,
       errors: 0,
       warnings: 0,
       info: 0,
+      debug: 0,
+      trace: 0,
       other: 0,
     };
 
     entries.forEach((entry) => {
       const level = entry.level.toLowerCase();
-      if (level.includes("error")) {
+      if (level.includes("fatal")) {
+        summary.fatal++;
+      } else if (level.includes("error")) {
         summary.errors++;
       } else if (level.includes("warn")) {
         summary.warnings++;
       } else if (level.includes("info")) {
         summary.info++;
+      } else if (level.includes("debug")) {
+        summary.debug++;
+      } else if (level.includes("trace")) {
+        summary.trace++;
       } else {
         summary.other++;
       }
@@ -165,7 +177,7 @@ export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
                     justify-content: space-between;
                     align-items: center;
                 }
-                .toolbar h3 {
+                .toolbar h3 {∂
                     margin: 0;
                     font-size: var(--vscode-font-size);
                     font-weight: 600;
@@ -249,6 +261,10 @@ export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
                 .log-badge[data-has-logs="true"] {
                     opacity: 1;
                 }
+                .log-badge.fatal {
+                    background-color: var(--vscode-testing-message-error-decorationForeground);
+                    color: var(--vscode-editor-background);
+                }
                 .log-badge.error {
                     background-color: var(--vscode-errorForeground);
                     color: var(--vscode-editor-background);
@@ -259,6 +275,14 @@ export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
                 }
                 .log-badge.info {
                     background-color: var(--vscode-notificationsInfoIcon-foreground);
+                    color: var(--vscode-editor-background);
+                }
+                .log-badge.debug {
+                    background-color: var(--vscode-debugIcon-startForeground);
+                    color: var(--vscode-editor-background);
+                }
+                .log-badge.trace {
+                    background-color: var(--vscode-charts-purple);
                     color: var(--vscode-editor-background);
                 }
                 .log-badge.other {
@@ -310,6 +334,9 @@ export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
                                         </span>
                                     </div>
                                     <div class="log-badges">
+                                        <span class="log-badge fatal" data-has-logs="${
+                                          summary.fatal > 0
+                                        }">${formatNumber(summary.fatal)}</span>
                                         <span class="log-badge error" data-has-logs="${
                                           summary.errors > 0
                                         }">${formatNumber(
@@ -323,6 +350,12 @@ export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
                                         <span class="log-badge info" data-has-logs="${
                                           summary.info > 0
                                         }">${formatNumber(summary.info)}</span>
+                                        <span class="log-badge debug" data-has-logs="${
+                                          summary.debug > 0
+                                        }">${formatNumber(summary.debug)}</span>
+                                        <span class="log-badge trace" data-has-logs="${
+                                          summary.trace > 0
+                                        }">${formatNumber(summary.trace)}</span>
                                         <span class="log-badge other" data-has-logs="${
                                           summary.other > 0
                                         }">${formatNumber(summary.other)}</span>

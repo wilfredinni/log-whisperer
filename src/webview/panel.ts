@@ -249,7 +249,7 @@ export class LogViewerPanel {
     // If we're loading and have no logs yet, show default filter options
     const stats = this.calculateStats();
     if (this.isLoading && this.allLogs.length === 0) {
-      stats.allLevels = ["ERROR", "WARNING", "INFO", "DEBUG"]; // Default options
+      stats.allLevels = ["FATAL", "ERROR", "WARNING", "INFO", "DEBUG", "TRACE"]; // Updated default options
       stats.allLoggers = ["Application"]; // Default option
     }
 
