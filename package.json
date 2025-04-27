@@ -9,7 +9,7 @@
   "categories": [
     "Other"
   ],
-  "icon": "media/icon.png",
+  "icon": "media/icon.svg",
   "activationEvents": [],
   "main": "./dist/extension.js",
   "contributes": {
@@ -18,14 +18,14 @@
         {
           "id": "log-whisperer-explorer",
           "title": "Log Whisperer",
-          "icon": "media/icon-light.png"
+          "icon": "media/icon-light.svg"
         }
       ]
     },
     "views": {
       "log-whisperer-explorer": [
         {
-          "icon": "media/icon-light.png",
+          "icon": "media/icon-light.svg",
           "id": "logWhispererView",
           "name": "Log Explorer",
           "type": "webview"
@@ -48,8 +48,8 @@
         "title": "Parse Log File",
         "category": "Log Whisperer",
         "icon": {
-          "light": "media/icon-light.png",
-          "dark": "media/icon-dark.png"
+          "light": "media/icon-light.svg",
+          "dark": "media/icon-dark.svg"
         }
       },
       {
