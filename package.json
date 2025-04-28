@@ -2,6 +2,7 @@
   "name": "log-whisperer",
   "displayName": "log-whisperer",
   "description": "A VS Code extension for viewing log files in a structured way",
+  "publisher": "wilfredinni",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.99.0"

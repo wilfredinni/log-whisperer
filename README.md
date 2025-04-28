@@ -2,6 +2,8 @@
 
 A powerful VS Code extension for analyzing and exploring log files with ease. Log Whisperer provides an intuitive interface to view, filter, and analyze your application logs directly within VS Code.
 
+![Log Whisperer](/media/SCR-20250427-sgny.png)
+
 ## Features
 
 - **Log File Explorer**: Automatically discovers and lists all log files in your workspace
@@ -62,7 +64,7 @@ No known issues at this time. If you encounter any problems, please report them 
 
 ## Release Notes
 
-### 1.0.0
+### 0.0.1
 
 Initial release of Log Whisperer:
 
@@ -70,13 +72,3 @@ Initial release of Log Whisperer:
 - Interactive log viewer with filtering
 - Real-time statistics
 - Jump to source functionality
-
----
-
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-- [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-**Enjoy!**
