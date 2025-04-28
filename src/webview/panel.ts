@@ -62,7 +62,7 @@ export class LogViewerPanel {
 
               // If line number is provided, move to that line
               if (typeof message.line === "number") {
-                const line = message.line - 1; // Convert to 0-based
+                const line = message.line - 1;
                 const range = document.lineAt(line).range;
                 editor.selection = new vscode.Selection(
                   range.start,
@@ -234,8 +234,8 @@ export class LogViewerPanel {
     // If we're loading and have no logs yet, show default filter options
     const stats = this.calculateStats();
     if (this.isLoading && this.allLogs.length === 0) {
-      stats.allLevels = ["FATAL", "ERROR", "WARNING", "INFO", "DEBUG", "TRACE"]; // Updated default options
-      stats.allLoggers = ["Application"]; // Default option
+      stats.allLevels = ["FATAL", "ERROR", "WARNING", "INFO", "DEBUG", "TRACE"];
+      stats.allLoggers = ["Application"];
     }
 
     this.panel.webview.html = getWebviewContent(
