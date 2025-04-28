@@ -2,17 +2,13 @@ import * as vscode from "vscode";
 import * as path from "path";
 import { LogEntry, LogExplorerState } from "../models/types";
 import { parseLogFileStream } from "../utils/parser";
-
-interface LogSummary {
-  total: number;
-  errors: number;
-  fatal: number;
-  warnings: number;
-  info: number;
-  debug: number;
-  trace: number;
-  other: number;
-}
+import { SIDEBAR_STYLES } from "./styles/sidebarStyles";
+import {
+  LogSummary,
+  calculateLogSummary,
+  getLogLevelColor,
+  formatNumber,
+} from "./helpers/sidebarHelpers";
 
 export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
   private _view?: vscode.WebviewView;
@@ -89,40 +85,6 @@ export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
     });
   }
 
-  private calculateLogSummary(entries: LogEntry[]): LogSummary {
-    const summary: LogSummary = {
-      total: entries.length,
-      fatal: 0,
-      errors: 0,
-      warnings: 0,
-      info: 0,
-      debug: 0,
-      trace: 0,
-      other: 0,
-    };
-
-    entries.forEach((entry) => {
-      const level = entry.level.toLowerCase();
-      if (level.includes("fatal")) {
-        summary.fatal++;
-      } else if (level.includes("error")) {
-        summary.errors++;
-      } else if (level.includes("warn")) {
-        summary.warnings++;
-      } else if (level.includes("info")) {
-        summary.info++;
-      } else if (level.includes("debug")) {
-        summary.debug++;
-      } else if (level.includes("trace")) {
-        summary.trace++;
-      } else {
-        summary.other++;
-      }
-    });
-
-    return summary;
-  }
-
   private _updateWebview() {
     if (!this._view) {
       return;
@@ -132,180 +94,13 @@ export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
   }
 
   private _getHtmlForWebview(webview: vscode.Webview): string {
-    const getLogLevelColor = (level: string): string => {
-      switch (level.toLowerCase()) {
-        case "error":
-          return "var(--vscode-errorForeground)";
-        case "warning":
-          return "var(--vscode-problemsWarningIcon-foreground)";
-        case "info":
-          return "var(--vscode-notificationsInfoIcon-foreground)";
-        default:
-          return "var(--vscode-foreground)";
-      }
-    };
-
-    const formatNumber = (num: number): string => {
-      return num.toLocaleString();
-    };
-
     return `<!DOCTYPE html>
         <html lang="en">
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <style>
-                body {
-                    padding: 0;
-                    margin: 0;
-                    font-family: var(--vscode-font-family);
-                    color: var(--vscode-foreground);
-                    background: var(--vscode-sideBar-background);
-                }
-                .container {
-                    padding: 0 12px;
-                }
-                .toolbar {
-                    position: sticky;
-                    top: 0;
-                    z-index: 100;
-                    padding: 1px 27px;
-                    margin: 0 -12px 12px;
-                    background: var(--vscode-sideBar-background);
-                    border-bottom: 1px solid var(--vscode-sideBarSectionHeader-border);
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                }
-                .toolbar h3 {∂
-                    margin: 0;
-                    font-size: var(--vscode-font-size);
-                    font-weight: 600;
-                    color: var(--vscode-sideBarTitle-foreground);
-                    opacity: 0.9;
-                }
-                .refresh-button {
-                    display: flex;
-                    align-items: center;
-                    gap: 4px;
-                    background: var(--vscode-button-secondaryBackground);
-                    color: var(--vscode-button-secondaryForeground);
-                    border: none;
-                    padding: 4px 8px;
-                    border-radius: 2px;
-                    cursor: pointer;
-                    font-size: 11px;
-                    height: 24px;
-                }
-                .refresh-button:hover {
-                    background: var(--vscode-button-secondaryHoverBackground);
-                }
-                .log-files {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 8px;
-                }
-                .log-file {
-                    background: var(--vscode-list-inactiveSelectionBackground);
-                    border-radius: 4px;
-                    border: 1px solid var(--vscode-widget-border);
-                    transition: all 0.1s ease;
-                }
-                .log-file:hover {
-                    background: var(--vscode-list-hoverBackground);
-                    border-color: var(--vscode-focusBorder);
-                }
-                .file-header {
-                    padding: 8px 12px;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 8px;
-                    cursor: pointer;
-                    user-select: none;
-                }
-                .file-name-row {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    width: 100%;
-                }
-                .file-name {
-                    font-weight: 500;
-                    color: var(--vscode-editor-foreground);
-                    font-size: 12px;
-                }
-                .total-count {
-                    color: var(--vscode-descriptionForeground);
-                    font-size: 11px;
-                    font-weight: normal;
-                }
-                .log-badges {
-                    display: flex;
-                    gap: 0;
-                    width: 100%;
-                    padding: 0;
-                    margin: 0;
-                }
-                .log-badge {
-                    display: flex;
-                    align-items: center;
-                    padding: 2px 0;
-                    border-radius: 0;
-                    font-size: 10px;
-                    font-weight: 600;
-                    height: 14px;
-                    justify-content: center;
-                    flex: 1;
-                    min-width: 0;
-                    white-space: nowrap;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                }
-                .log-badge[data-has-logs="true"] {
-                    opacity: 1;
-                }
-                .log-badge:first-child {
-                    border-top-left-radius: 3px;
-                    border-bottom-left-radius: 3px;
-                }
-                .log-badge:last-child {
-                    border-top-right-radius: 3px;
-                    border-bottom-right-radius: 3px;
-                }
-                .log-badge.fatal {
-                    background-color: #cc0000;
-                    color: #ffffff;
-                }
-                .log-badge.error {
-                    background-color: var(--vscode-errorForeground);
-                    color: var(--vscode-editor-background);
-                }
-                .log-badge.warning {
-                    background-color: var(--vscode-problemsWarningIcon-foreground);
-                    color: var(--vscode-editor-background);
-                }
-                .log-badge.info {
-                    background-color: var(--vscode-notificationsInfoIcon-foreground);
-                    color: var(--vscode-editor-background);
-                }
-                .log-badge.debug {
-                    background-color: var(--vscode-debugIcon-startForeground);
-                    color: var(--vscode-editor-background);
-                }
-                .log-badge.trace {
-                    background-color: var(--vscode-charts-purple);
-                    color: var(--vscode-editor-background);
-                }
-                .log-badge.other {
-                    background-color: var(--vscode-descriptionForeground);
-                    color: var(--vscode-editor-background);
-                }
-                .empty-state {
-                    padding: 24px 16px;
-                    text-align: center;
-                    color: var(--vscode-descriptionForeground);
-                    font-size: 12px;
-                }
+                ${SIDEBAR_STYLES}
             </style>
         </head>
         <body>
@@ -332,7 +127,7 @@ export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
                     }
                     ${this._state.logFiles
                       .map((file) => {
-                        const summary = this.calculateLogSummary(file.entries);
+                        const summary = calculateLogSummary(file.entries);
                         return `
                             <div class="log-file" data-path="${file.path}">
                                 <div class="file-header">
