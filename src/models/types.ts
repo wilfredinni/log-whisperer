@@ -5,7 +5,7 @@ export interface LogEntry {
   message: string;
   raw: string;
   filePath?: string;
-  lineNumber?: number; // Track the actual line number in the file
+  lineNumber?: number;
 }
 
 export interface LogStats {
@@ -57,5 +57,5 @@ export interface WebviewMessage {
   stats?: LogStats;
   filters?: LogFilters;
   progress?: number;
-  line?: number; // Added line number for file opening
+  line?: number;
 }
