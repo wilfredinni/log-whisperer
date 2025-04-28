@@ -12,7 +12,3 @@
 - Ability to open log files in editor
 - Refresh functionality to rescan workspace
 - VS Code theme-aware UI styling
-
-All notable changes to the "log-whisperer" extension will be documented in this file.
-
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
