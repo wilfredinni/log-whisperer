@@ -4,12 +4,7 @@ import { LogEntry, LogExplorerState } from "../models/types";
 import { parseLogFileStream } from "../utils/parser";
 import { SIDEBAR_STYLES } from "./styles/sidebarStyles";
 import { debounce } from "../utils/helpers";
-import {
-  LogSummary,
-  calculateLogSummary,
-  getLogLevelColor,
-  formatNumber,
-} from "./helpers/sidebarHelpers";
+import { calculateLogSummary, formatNumber } from "./helpers/sidebarHelpers";
 
 export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
   private _view?: vscode.WebviewView;
@@ -65,7 +60,6 @@ export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
           filePath,
           setTimeout(async () => {
             try {
-              const entries: LogEntry[] = [];
               for await (const result of parseLogFileStream(uri)) {
                 if (result.isDone) {
                   existingFile.entries = result.entries;
@@ -89,7 +83,6 @@ export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
     try {
       const filePath = uri.fsPath;
       if (!this._state.logFiles.some((f) => f.path === filePath)) {
-        const entries: LogEntry[] = [];
         for await (const result of parseLogFileStream(uri)) {
           if (result.isDone) {
             this._state.logFiles.push({
@@ -130,7 +123,6 @@ export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
 
     for (const file of logFiles) {
       try {
-        const entries: LogEntry[] = [];
         for await (const result of parseLogFileStream(file)) {
           if (result.isDone) {
             this._state.logFiles.push({
