@@ -20,10 +20,61 @@ export const BASE_STYLES = `
         background: var(--vscode-editor-background);
         border-bottom: thin solid var(--vscode-panel-border);
         padding: 12px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .stats-container {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 16px;
     }
 
     .stats {
-        margin-bottom: 16px;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    .stream-toggle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .stream-toggle label {
+        font-size: 11px;
+        color: var(--vscode-descriptionForeground);
+    }
+
+    .stream-toggle input[type="checkbox"] {
+        width: 36px;
+        height: 20px;
+        appearance: none;
+        background: var(--vscode-input-background);
+        border-radius: 10px;
+        position: relative;
+        cursor: pointer;
+    }
+
+    .stream-toggle input[type="checkbox"]::before {
+        content: '';
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: var(--vscode-input-foreground);
+        top: 2px;
+        left: 2px;
+        transition: transform 0.2s;
+    }
+
+    .stream-toggle input[type="checkbox"]:checked::before {
+        transform: translateX(16px);
+        background: var(--vscode-button-background);
     }
 
     .stats-header {
@@ -31,6 +82,8 @@ export const BASE_STYLES = `
         align-items: center;
         justify-content: space-between;
         margin-bottom: 12px;
+        flex-wrap: wrap;
+        gap: 8px;
     }
 
     .stats-header h3 {
@@ -48,7 +101,9 @@ export const BASE_STYLES = `
 
     .stats-levels {
         display: flex;
-        gap: 16px;
+        flex-wrap: wrap;
+        gap: 8px 16px;
+        align-items: center;
     }
 
     .stat-item {
