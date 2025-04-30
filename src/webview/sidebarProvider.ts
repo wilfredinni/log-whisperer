@@ -3,22 +3,119 @@ import * as path from "path";
 import { LogEntry, LogExplorerState } from "../models/types";
 import { parseLogFileStream } from "../utils/parser";
 import { SIDEBAR_STYLES } from "./styles/sidebarStyles";
-import {
-  LogSummary,
-  calculateLogSummary,
-  getLogLevelColor,
-  formatNumber,
-} from "./helpers/sidebarHelpers";
+import { debounce } from "../utils/helpers";
+import { calculateLogSummary, formatNumber } from "./helpers/sidebarHelpers";
 
 export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
   private _view?: vscode.WebviewView;
   private _state: LogExplorerState = { logFiles: [] };
+  private _watcher?: vscode.FileSystemWatcher;
+  private _pendingUpdates: Map<string, NodeJS.Timeout> = new Map();
 
   constructor(private readonly extensionUri: vscode.Uri) {
     this.scanWorkspace();
+    try {
+      this._setupFileWatcher();
+    } catch (err) {
+      vscode.window.showErrorMessage(
+        "Failed to initialize file watcher: " + (err as Error).message
+      );
+    }
+  }
+
+  private _setupFileWatcher() {
+    this._watcher = vscode.workspace.createFileSystemWatcher("**/*.log");
+
+    this._watcher.onDidChange(
+      debounce(async (uri: vscode.Uri) => {
+        await this._handleFileChange(uri);
+      }, 500)
+    );
+
+    this._watcher.onDidCreate(async (uri: vscode.Uri) => {
+      await this._handleFileCreate(uri);
+    });
+
+    this._watcher.onDidDelete(async (uri: vscode.Uri) => {
+      await this._handleFileDelete(uri);
+    });
+  }
+
+  private async _handleFileChange(uri: vscode.Uri) {
+    try {
+      const filePath = uri.fsPath;
+      const existingFile = this._state.logFiles.find(
+        (f) => f.path === filePath
+      );
+
+      if (existingFile) {
+        // Clear any pending update for this file
+        const pending = this._pendingUpdates.get(filePath);
+        if (pending) {
+          clearTimeout(pending);
+        }
+
+        // Schedule update with debounce
+        this._pendingUpdates.set(
+          filePath,
+          setTimeout(async () => {
+            try {
+              for await (const result of parseLogFileStream(uri)) {
+                if (result.isDone) {
+                  existingFile.entries = result.entries;
+                  this._updateWebview();
+                }
+              }
+            } catch (err) {
+              console.error(`Error updating log file ${filePath}:`, err);
+            } finally {
+              this._pendingUpdates.delete(filePath);
+            }
+          }, 500)
+        );
+      }
+    } catch (err) {
+      console.error("Error handling file change:", err);
+    }
+  }
+
+  private async _handleFileCreate(uri: vscode.Uri) {
+    try {
+      const filePath = uri.fsPath;
+      if (!this._state.logFiles.some((f) => f.path === filePath)) {
+        for await (const result of parseLogFileStream(uri)) {
+          if (result.isDone) {
+            this._state.logFiles.push({
+              path: filePath,
+              name: path.basename(filePath),
+              entries: result.entries,
+              isExpanded: false,
+            });
+            this._updateWebview();
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Error handling file create:", err);
+    }
+  }
+
+  private async _handleFileDelete(uri: vscode.Uri) {
+    try {
+      const filePath = uri.fsPath;
+      this._state.logFiles = this._state.logFiles.filter(
+        (f) => f.path !== filePath
+      );
+      this._updateWebview();
+    } catch (err) {
+      console.error("Error handling file delete:", err);
+    }
   }
 
   private async scanWorkspace() {
+    // Clear any pending updates
+    this._pendingUpdates.forEach((timeout) => clearTimeout(timeout));
+    this._pendingUpdates.clear();
     // Find all log files in the workspace
     const logFiles = await vscode.workspace.findFiles("**/*.log");
 
@@ -26,7 +123,6 @@ export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
 
     for (const file of logFiles) {
       try {
-        const entries: LogEntry[] = [];
         for await (const result of parseLogFileStream(file)) {
           if (result.isDone) {
             this._state.logFiles.push({
@@ -43,6 +139,18 @@ export class LogExplorerViewProvider implements vscode.WebviewViewProvider {
     }
 
     this._updateWebview();
+  }
+
+  dispose() {
+    try {
+      if (this._watcher) {
+        this._watcher.dispose();
+      }
+      this._pendingUpdates.forEach((timeout) => clearTimeout(timeout));
+      this._pendingUpdates.clear();
+    } catch (err) {
+      console.error("Error during dispose:", err);
+    }
   }
 
   resolveWebviewView(

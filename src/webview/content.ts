@@ -74,8 +74,12 @@ export function getWebviewContent(
     <body>
         <div class="container">
             <div class="header" id="statsAndFilters">
-                ${generateStatsHTML(stats)}
-                ${generateFiltersHTML(stats, filters)}
+                <div class="stats-container">
+                    ${generateStatsHTML(stats)}
+                </div>
+                <div class="filters-container">
+                    ${generateFiltersHTML(stats, filters)}
+                </div>
             </div>
 
             <div class="table-container">

@@ -20,10 +20,23 @@ export const BASE_STYLES = `
         background: var(--vscode-editor-background);
         border-bottom: thin solid var(--vscode-panel-border);
         padding: 12px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .stats-container {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 16px;
     }
 
     .stats {
-        margin-bottom: 16px;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
     }
 
     .stats-header {
@@ -31,6 +44,8 @@ export const BASE_STYLES = `
         align-items: center;
         justify-content: space-between;
         margin-bottom: 12px;
+        flex-wrap: wrap;
+        gap: 8px;
     }
 
     .stats-header h3 {
@@ -48,7 +63,9 @@ export const BASE_STYLES = `
 
     .stats-levels {
         display: flex;
-        gap: 16px;
+        flex-wrap: wrap;
+        gap: 8px 16px;
+        align-items: center;
     }
 
     .stat-item {
