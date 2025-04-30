@@ -64,11 +64,22 @@ No known issues at this time. If you encounter any problems, please report them 
 
 ## Release Notes
 
-### 0.0.1
+### 0.0.2
 
-Initial release of Log Whisperer:
+This release introduces a new file watcher feature for the `LogExplorerViewProvider`, improves the webview's layout and styling, and adds a reusable `debounce` utility function. These changes enhance functionality, performance, and maintainability.
 
-- Log file discovery and parsing
-- Interactive log viewer with filtering
-- Real-time statistics
-- Jump to source functionality
+### New File Watcher Feature:
+
+- Added a file watcher in `LogExplorerViewProvider` to monitor `.log` files for changes, creation, and deletion. This includes debounced handling of file updates and automatic updates to the webview.
+
+### Utility Enhancements:
+
+- Introduced a reusable `debounce` function in `src/utils/helpers.ts` for managing delayed execution of functions. This is used in the file watcher to optimize performance.
+
+### Webview Layout and Styling Improvements:
+
+- Updated the webview's HTML structure to include separate containers for stats and filters, improving organization.
+
+### Code Maintenance:
+
+- Changed imports in `sidebarProvider.ts` and `panel.ts` to use `type` for type-only imports, aligning with best practices.
