@@ -76,10 +76,6 @@ export function getWebviewContent(
             <div class="header" id="statsAndFilters">
                 <div class="stats-container">
                     ${generateStatsHTML(stats)}
-                    <div class="stream-toggle">
-                        <label>Stream</label>
-                        <input type="checkbox" id="streamToggle">
-                    </div>
                 </div>
                 <div class="filters-container">
                     ${generateFiltersHTML(stats, filters)}

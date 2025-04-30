@@ -39,44 +39,6 @@ export const BASE_STYLES = `
         min-width: 0;
     }
 
-    .stream-toggle {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .stream-toggle label {
-        font-size: 11px;
-        color: var(--vscode-descriptionForeground);
-    }
-
-    .stream-toggle input[type="checkbox"] {
-        width: 36px;
-        height: 20px;
-        appearance: none;
-        background: var(--vscode-input-background);
-        border-radius: 10px;
-        position: relative;
-        cursor: pointer;
-    }
-
-    .stream-toggle input[type="checkbox"]::before {
-        content: '';
-        position: absolute;
-        width: 16px;
-        height: 16px;
-        border-radius: 50%;
-        background: var(--vscode-input-foreground);
-        top: 2px;
-        left: 2px;
-        transition: transform 0.2s;
-    }
-
-    .stream-toggle input[type="checkbox"]:checked::before {
-        transform: translateX(16px);
-        background: var(--vscode-button-background);
-    }
-
     .stats-header {
         display: flex;
         align-items: center;
